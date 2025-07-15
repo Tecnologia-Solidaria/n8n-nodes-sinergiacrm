@@ -1,5 +1,4 @@
 import type { ILoadOptionsFunctions } from 'n8n-workflow';
-import * as querystring from 'querystring';
 
 export async function getModules(this: ILoadOptionsFunctions) {
 	const credentials = await this.getCredentials('SinergiaCRMCredentials');
@@ -11,11 +10,13 @@ export async function getModules(this: ILoadOptionsFunctions) {
 	const clientId = credentials.clientId as string;
 	const clientSecret = credentials.clientSecret as string;
 
-	const body = querystring.stringify({
+	const params = {
 		grant_type: 'client_credentials',
 		client_id: clientId,
 		client_secret: clientSecret,
-	});
+	};
+	const body = new URLSearchParams(params).toString();
+
 
 	const tokenResponse = await this.helpers.httpRequest({
 		method: 'POST',
@@ -64,11 +65,13 @@ export async function getModuleFields(this: ILoadOptionsFunctions) {
 		return [];
 	}
 
-	const body = querystring.stringify({
+	const params = {
 		grant_type: 'client_credentials',
 		client_id: clientId,
 		client_secret: clientSecret,
-	});
+	};
+	const body = new URLSearchParams(params).toString();
+
 
 	const tokenResponse = await this.helpers.httpRequest({
 		method: 'POST',
@@ -124,11 +127,13 @@ export async function getAvailableRelationships(this: ILoadOptionsFunctions) {
 		return [];
 	}
 
-	const body = querystring.stringify({
+	const params = {
 		grant_type: 'client_credentials',
 		client_id: clientId,
 		client_secret: clientSecret,
-	});
+	};
+	const body = new URLSearchParams(params).toString();
+
 
 	const tokenResponse = await this.helpers.httpRequest({
 		method: 'POST',

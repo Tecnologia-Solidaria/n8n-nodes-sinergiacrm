@@ -1,5 +1,4 @@
 import type { IExecuteFunctions } from 'n8n-workflow';
-import * as querystring from 'querystring';
 import { buildQueryParams } from './query';
 
 /**
@@ -16,11 +15,12 @@ export async function authenticate(
 	const clientId = credentials.clientId as string;
 	const clientSecret = credentials.clientSecret as string;
 
-	const body = querystring.stringify({
+	const params = {
 		grant_type: 'client_credentials',
 		client_id: clientId,
 		client_secret: clientSecret,
-	});
+	};
+	const body = new URLSearchParams(params).toString();
 
 	const tokenResponse = await node.helpers.httpRequest({
 		method: 'POST',

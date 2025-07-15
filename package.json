@@ -2,9 +2,11 @@
   "name": "n8n-nodes-sinergiacrm",
   "version": "1.1.0",
   "description": "A generic n8n node to operate with any SinergiaCRM (SuiteCRM 7.x+) module via the official JSON API.",
+  "type": "module",
   "main": "dist/nodes/SinergiaCRM/SinergiaCRM.node.js",
   "scripts": {
-    "build": "npx rimraf dist && tsc && cp nodes/SinergiaCRM/sinergiacrm.svg dist/nodes/SinergiaCRM/"
+    "build": "rimraf dist && tsc && cp nodes/SinergiaCRM/sinergiacrm.svg dist/nodes/SinergiaCRM/",
+    "lint": "eslint ."
   },
   "keywords": [
     "n8n",
@@ -40,6 +42,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.13",
+    "eslint": "8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.3",
     "rimraf": "^5.0.0",
     "typescript": "^5.0.0"
   },

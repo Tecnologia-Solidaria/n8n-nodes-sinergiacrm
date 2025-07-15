@@ -1,0 +1,10 @@
+{
+  "root": true,
+  "env": {
+    "es6": true,
+    "node": true
+  },
+  "extends": [
+    "plugin:n8n-nodes-base/recommended"
+  ]
+}
