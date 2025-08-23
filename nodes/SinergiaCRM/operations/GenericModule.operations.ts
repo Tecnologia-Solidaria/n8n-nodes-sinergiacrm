@@ -3,7 +3,7 @@ import type { INodeProperties } from 'n8n-workflow';
 /**
  * Generic CRUD operations and relationships for any SuiteCRM module.
  * - "Operation" exposes all main CRUD plus the option to get related records (relationships).
- * - Filter fields are fully dynamic, fetched via API metadata, with robust support for custom fields.
+ * - Options support pagination and dynamic filters.
  */
 export const genericModuleOperations: INodeProperties[] = [
 	{
@@ -22,7 +22,6 @@ export const genericModuleOperations: INodeProperties[] = [
 				name: 'Get One',
 				value: 'getOne',
 				action: 'Get a single record',
-				// Routing left for compatibility, but all logic is handled programmatically.
 			},
 			{
 				name: 'Create',
@@ -47,7 +46,7 @@ export const genericModuleOperations: INodeProperties[] = [
 		],
 	},
 
-	// Options collection for pagination and dynamic filters
+	// Options collection for pagination and filters
 	{
 		displayName: 'Options',
 		name: 'options',
@@ -105,6 +104,7 @@ export const genericModuleOperations: INodeProperties[] = [
 								type: 'string',
 								default: '',
 								placeholder: 'Field name (example: my_field_c)',
+								description: 'Only required if "Custom..." is selected above. Example: my_field_c',
 								displayOptions: {
 									show: {
 										field: ['__custom__'],
@@ -118,11 +118,11 @@ export const genericModuleOperations: INodeProperties[] = [
 								default: 'eq',
 								options: [
 									{ name: 'Equals', value: 'eq', description: 'Equals (=)' },
-									{ name: 'Not Equals', value: 'neq', description: 'Not equals (<>)' },
+									{ name: 'Not Equals', value: 'neq', description: 'Not equals (≠)' },
 									{ name: 'Greater Than', value: 'gt', description: 'Greater than (>)' },
-									{ name: 'Greater Than or Equal', value: 'gte', description: 'Greater than or equal (>=)' },
+									{ name: 'Greater Than or Equal', value: 'gte', description: 'Greater than or equal (≥)' },
 									{ name: 'Less Than', value: 'lt', description: 'Less than (<)' },
-									{ name: 'Less Than or Equal', value: 'lte', description: 'Less than or equal (<=)' },
+									{ name: 'Less Than or Equal', value: 'lte', description: 'Less than or equal (≤)' },
 								],
 							},
 							{
@@ -131,6 +131,7 @@ export const genericModuleOperations: INodeProperties[] = [
 								type: 'string',
 								default: '',
 								placeholder: 'Value for the filter',
+								description: 'Value for the filter (string, number, or date depending on field type)',
 							},
 						],
 					},

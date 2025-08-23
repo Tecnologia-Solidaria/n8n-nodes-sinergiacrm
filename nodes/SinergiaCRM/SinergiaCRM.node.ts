@@ -8,15 +8,11 @@ import {
 
 import * as methods from './methods.loadOptions';
 import { genericModuleOperations } from './operations/GenericModule.operations';
-
-// Central helpers
-import { authenticate, fetchModuleRecords } from './helpers/api';
-import { buildQueryParams } from './helpers/query';
 import { parseJsonInput } from './helpers/parse';
 
 /**
- * n8n node for generic access to any module of SinergiaCRM (SuiteCRM API).
- * Handles CRUD operations and relationships for any given SuiteCRM module.
+ * n8n node for interacting with any module of SinergiaCRM (SuiteCRM API).
+ * Supports CRUD operations, relationship fetching, pagination and filters.
  */
 export class SinergiaCRM implements INodeType {
 	description: INodeTypeDescription = {
@@ -25,7 +21,7 @@ export class SinergiaCRM implements INodeType {
 		icon: 'file:sinergiacrm.svg',
 		group: ['transform'],
 		version: 1,
-		description: 'Generic node to operate with any SinergiaCRM (SuiteCRM API) module.',
+		description: 'Perform operations on any module in SinergiaCRM (SuiteCRM API).',
 		defaults: {
 			name: 'SinergiaCRM',
 		},
@@ -44,7 +40,7 @@ export class SinergiaCRM implements INodeType {
 				type: 'options',
 				required: true,
 				default: '',
-				description: 'Select SinergiaCRM module',
+				description: 'Select a module from SinergiaCRM',
 				typeOptions: {
 					loadOptionsMethod: 'getModules',
 				},
@@ -56,7 +52,7 @@ export class SinergiaCRM implements INodeType {
 				name: 'returnAll',
 				type: 'boolean',
 				default: false,
-				description: 'Fetch all records using auto-pagination.',
+				description: 'Fetch all records using auto-pagination',
 				displayOptions: {
 					show: {
 						operation: ['getAll'],
@@ -68,7 +64,7 @@ export class SinergiaCRM implements INodeType {
 				name: 'limit',
 				type: 'number',
 				default: 100,
-				description: 'Max records to return (if Return All is inactive).',
+				description: 'Maximum number of records to return when Return All is disabled',
 				displayOptions: {
 					show: {
 						operation: ['getAll'],
@@ -87,97 +83,152 @@ export class SinergiaCRM implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
-		const credentials = await this.getCredentials('SinergiaCRMCredentials');
-		const { apiUrl, accessToken } = await authenticate(this, credentials); // apiUrl includes /Api
-
 		const moduleName = this.getNodeParameter('module', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
 
-		if (operation === 'getAll') {
-			const returnAll = this.getNodeParameter('returnAll', 0, false) as boolean;
-			const limit = this.getNodeParameter('limit', 0, 100) as number;
-			const options = this.getNodeParameter('options', 0, {}) as any;
+		// Normalize credentials base URL (ensure no trailing slash)
+		const credentials = await this.getCredentials('SinergiaCRMCredentials');
+		const baseUrl = (credentials.domainUrl as string).replace(/\/$/, '');
+		const url = `${baseUrl}/Api/V8/module`;
 
-			const records = await fetchModuleRecords(
-				this,
-				apiUrl,
-				accessToken,
-				moduleName,
-				options,
-				returnAll,
-				limit,
-			);
+		// Operators supported by SuiteCRM v8 filter syntax
+		const SUPPORTED_OPERATORS: Record<string, string> = {
+			eq: 'EQ',
+			neq: 'NEQ',
+			gt: 'GT',
+			gte: 'GTE',
+			lt: 'LT',
+			lte: 'LTE',
+		};
 
-			for (const record of records) {
-				returnData.push({ json: record });
+		for (let i = 0; i < items.length; i++) {
+			try {
+				let response;
+
+				// GET ALL records
+				if (operation === 'getAll') {
+					const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+					const limit = this.getNodeParameter('limit', i, 100) as number;
+					const options = this.getNodeParameter('options', i, {}) as any;
+
+					let collected: any[] = [];
+					let pageNumber = 1;
+
+					// If Return All is disabled, respect "limit" as page size
+					const pageSize = returnAll ? (options.pageSize || 20) : limit;
+
+					do {
+						const qs: Record<string, any> = {
+							'page[size]': pageSize,
+							'page[number]': pageNumber,
+						};
+
+						// Apply filters if provided
+						if (options.filters?.Filter?.length) {
+							options.filters.Filter.forEach((f: any) => {
+								let fieldName = f.field === '__custom__' ? f.customField?.trim() : f.field;
+								if (fieldName && f.value) {
+									const opApi = SUPPORTED_OPERATORS[f.operator || 'eq'];
+									if (opApi) {
+										qs[`filter[${fieldName}][${opApi}]`] = f.value;
+									}
+								}
+							});
+						}
+
+						const data = await this.helpers.requestWithAuthentication.call(
+							this,
+							'SinergiaCRMCredentials',
+							{
+								method: 'GET',
+								url: `${url}/${moduleName}`,
+								qs,
+								json: true,
+							},
+						);
+
+						const records = data.data || [];
+						collected.push(...records);
+
+						if (!returnAll || records.length < pageSize || collected.length >= limit) break;
+						pageNumber++;
+					} while (true);
+
+					const sliced = returnAll ? collected : collected.slice(0, limit);
+					for (const record of sliced) {
+						returnData.push({ json: record });
+					}
+
+				// GET ONE record by ID
+				} else if (operation === 'getOne') {
+					const id = this.getNodeParameter('id', i) as string;
+					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+						method: 'GET',
+						url: `${url}/${moduleName}/${id}`,
+						json: true,
+					});
+					returnData.push({ json: response.data });
+
+				// CREATE record
+				} else if (operation === 'create') {
+					const attributes = parseJsonInput(this.getNodeParameter('data', i));
+					const body = {
+						data: { type: moduleName, attributes },
+					};
+					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+						method: 'POST',
+						url,
+						body,
+						json: true,
+					});
+					returnData.push({ json: response.data });
+
+				// UPDATE record
+				} else if (operation === 'update') {
+					const id = this.getNodeParameter('id', i) as string;
+					const attributes = parseJsonInput(this.getNodeParameter('data', i));
+					const body = {
+						data: { type: moduleName, id, attributes },
+					};
+					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+						method: 'PATCH',
+						url,
+						body,
+						json: true,
+					});
+					returnData.push({ json: response.data });
+
+				// DELETE record
+				} else if (operation === 'delete') {
+					const id = this.getNodeParameter('id', i) as string;
+					await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+						method: 'DELETE',
+						url: `${url}/${moduleName}/${id}`,
+						json: true,
+					});
+					returnData.push({ json: { success: true, id } });
+
+				// GET RELATIONSHIPS of a record
+				} else if (operation === 'getRelationships') {
+					const id = this.getNodeParameter('id', i) as string;
+					const relationship = this.getNodeParameter('relationship', i) as string;
+					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+						method: 'GET',
+						url: `${url}/${moduleName}/${id}/relationships/${relationship}`,
+						json: true,
+					});
+					returnData.push({ json: response.data });
+				}
+			} catch (error: any) {
+				if (this.continueOnFail()) {
+					returnData.push({
+						json: { error: error.message },
+						error,
+					});
+					continue;
+				}
+				throw error;
 			}
-		} else if (operation === 'getOne') {
-			const recordId = this.getNodeParameter('id', 0) as string;
-			const response = await this.helpers.httpRequest({
-				method: 'GET',
-				url: `${apiUrl}/V8/module/${moduleName}/${recordId}`,
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-				},
-				json: true,
-			});
-			returnData.push({ json: response.data ?? response });
-		} else if (operation === 'create') {
-			const attributes = parseJsonInput(this.getNodeParameter('data', 0));
-			const payload = {
-				data: { type: moduleName, attributes },
-			};
-			const response = await this.helpers.httpRequest({
-				method: 'POST',
-				url: `${apiUrl}/V8/module`,
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					'Content-Type': 'application/json',
-				},
-				body: payload,
-				json: true,
-			});
-			returnData.push({ json: response.data ?? response });
-		} else if (operation === 'update') {
-			const recordId = this.getNodeParameter('id', 0) as string;
-			const attributes = parseJsonInput(this.getNodeParameter('data', 0));
-			const payload = {
-				data: { type: moduleName, id: recordId, attributes },
-			};
-			const response = await this.helpers.httpRequest({
-				method: 'PATCH',
-				url: `${apiUrl}/V8/module`,
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					'Content-Type': 'application/json',
-				},
-				body: payload,
-				json: true,
-			});
-			returnData.push({ json: response.data ?? response });
-		} else if (operation === 'delete') {
-			const recordId = this.getNodeParameter('id', 0) as string;
-			await this.helpers.httpRequest({
-				method: 'DELETE',
-				url: `${apiUrl}/V8/module/${moduleName}/${recordId}`,
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-				},
-				json: true,
-			});
-			returnData.push({ json: { success: true, id: recordId } });
-		} else if (operation === 'getRelationships') {
-			const recordId = this.getNodeParameter('id', 0) as string;
-			const relationship = this.getNodeParameter('relationship', 0) as string;
-			const response = await this.helpers.httpRequest({
-				method: 'GET',
-				url: `${apiUrl}/V8/module/${moduleName}/${recordId}/relationships/${relationship}`,
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-				},
-				json: true,
-			});
-			returnData.push({ json: response.data ?? response });
 		}
 
 		return [returnData];

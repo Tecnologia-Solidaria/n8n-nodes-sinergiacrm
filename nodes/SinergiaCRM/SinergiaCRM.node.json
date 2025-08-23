@@ -1,0 +1,12 @@
+{
+  "node": "n8n-nodes-sinergiacrm.SinergiaCRM",
+  "nodeVersion": 1,
+  "codexVersion": "1.0",
+  "categories": [
+    "CRM"
+  ],
+  "resources": {
+    "documentation": "https://github.com/tecnologiasolidaria/n8n-nodes-sinergiacrm#readme",
+    "icon": "sinergiacrm.svg"
+  }
+}
