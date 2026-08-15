@@ -9,6 +9,7 @@ import {
 import * as methods from './methods.loadOptions';
 import { genericModuleOperations } from './operations/GenericModule.operations';
 import { parseJsonInput } from './helpers/parse';
+import { buildFilters } from './helpers/filters';
 
 /**
  * n8n node for interacting with any module of SinergiaCRM (SuiteCRM API).
@@ -91,16 +92,6 @@ export class SinergiaCRM implements INodeType {
 		const baseUrl = (credentials.domainUrl as string).replace(/\/$/, '');
 		const url = `${baseUrl}/Api/V8/module`;
 
-		// Operators supported by SuiteCRM v8 filter syntax
-		const SUPPORTED_OPERATORS: Record<string, string> = {
-			eq: 'EQ',
-			neq: 'NEQ',
-			gt: 'GT',
-			gte: 'GTE',
-			lt: 'LT',
-			lte: 'LTE',
-		};
-
 		for (let i = 0; i < items.length; i++) {
 			try {
 				let response;
@@ -121,20 +112,8 @@ export class SinergiaCRM implements INodeType {
 						const qs: Record<string, any> = {
 							'page[size]': pageSize,
 							'page[number]': pageNumber,
+							...buildFilters(options.filters),
 						};
-
-						// Apply filters if provided
-						if (options.filters?.Filter?.length) {
-							options.filters.Filter.forEach((f: any) => {
-								let fieldName = f.field === '__custom__' ? f.customField?.trim() : f.field;
-								if (fieldName && f.value) {
-									const opApi = SUPPORTED_OPERATORS[f.operator || 'eq'];
-									if (opApi) {
-										qs[`filter[${fieldName}][${opApi}]`] = f.value;
-									}
-								}
-							});
-						}
 
 						const data = await this.helpers.requestWithAuthentication.call(
 							this,

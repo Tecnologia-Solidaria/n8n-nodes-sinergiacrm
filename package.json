@@ -6,7 +6,10 @@
   "types": "dist/nodes/SinergiaCRM/SinergiaCRM.node.d.ts",
   "scripts": {
     "build": "rimraf dist && tsc && cp nodes/SinergiaCRM/sinergiacrm.svg dist/nodes/SinergiaCRM/",
-    "lint": "eslint ."
+    "lint": "eslint . --resolve-plugins-relative-to .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "n8n",
@@ -39,10 +42,15 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.13",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "8.57.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "n8n-workflow": "^1.82.0",
     "rimraf": "^5.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
