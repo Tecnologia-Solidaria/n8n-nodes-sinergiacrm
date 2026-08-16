@@ -1,15 +1,31 @@
-import {
+import type {
 	IExecuteFunctions,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	NodeConnectionType,
 } from 'n8n-workflow';
+import { NodeConnectionType } from 'n8n-workflow';
+import type { IDataObject, NodeApiError } from 'n8n-workflow';
+import type { FilterOptions } from './helpers/filters';
 
 import * as methods from './methods.loadOptions';
 import { genericModuleOperations } from './operations/GenericModule.operations';
 import { parseJsonInput } from './helpers/parse';
-import { buildFilters } from './helpers/filters';
+import { buildListQuery, resolvePageSize, shouldFetchNextPage } from './helpers/query';
+import { buildCreateBody, buildUpdateBody } from './helpers/record';
+
+interface GetAllOptions {
+	pageSize?: number;
+	filters?: FilterOptions;
+}
+
+interface SuiteCRMListResponse {
+	data?: IDataObject[];
+}
+
+interface SuiteCRMRecordResponse {
+	data?: IDataObject;
+}
 
 /**
  * n8n node for interacting with any module of SinergiaCRM (SuiteCRM API).
@@ -94,28 +110,25 @@ export class SinergiaCRM implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				let response;
-
 				// GET ALL records
 				if (operation === 'getAll') {
 					const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
 					const limit = this.getNodeParameter('limit', i, 100) as number;
-					const options = this.getNodeParameter('options', i, {}) as any;
+					const options = this.getNodeParameter('options', i, {}) as GetAllOptions;
 
-					let collected: any[] = [];
+					let collected: IDataObject[] = [];
 					let pageNumber = 1;
 
-					// If Return All is disabled, respect "limit" as page size
-					const pageSize = returnAll ? (options.pageSize || 20) : limit;
+					const pageSize = resolvePageSize(returnAll, limit, options);
 
 					do {
-						const qs: Record<string, any> = {
-							'page[size]': pageSize,
-							'page[number]': pageNumber,
-							...buildFilters(options.filters),
-						};
+						const qs = buildListQuery({
+							pageSize,
+							pageNumber,
+							filters: options?.filters,
+						});
 
-						const data = await this.helpers.requestWithAuthentication.call(
+						const data = (await this.helpers.requestWithAuthentication.call(
 							this,
 							'SinergiaCRMCredentials',
 							{
@@ -124,12 +137,22 @@ export class SinergiaCRM implements INodeType {
 								qs,
 								json: true,
 							},
-						);
+						)) as SuiteCRMListResponse;
 
 						const records = data.data || [];
 						collected.push(...records);
 
-						if (!returnAll || records.length < pageSize || collected.length >= limit) break;
+						if (
+							!shouldFetchNextPage({
+								returnAll,
+								recordsLength: records.length,
+								pageSize,
+								limit,
+								collectedLength: collected.length,
+							})
+						) {
+							break;
+						}
 						pageNumber++;
 					} while (true);
 
@@ -141,41 +164,37 @@ export class SinergiaCRM implements INodeType {
 				// GET ONE record by ID
 				} else if (operation === 'getOne') {
 					const id = this.getNodeParameter('id', i) as string;
-					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 						method: 'GET',
 						url: `${url}/${moduleName}/${id}`,
 						json: true,
-					});
-					returnData.push({ json: response.data });
+					})) as SuiteCRMRecordResponse;
+					returnData.push({ json: response.data ?? {} });
 
 				// CREATE record
 				} else if (operation === 'create') {
 					const attributes = parseJsonInput(this.getNodeParameter('data', i));
-					const body = {
-						data: { type: moduleName, attributes },
-					};
-					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+					const body = buildCreateBody(moduleName, attributes);
+					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 						method: 'POST',
 						url,
 						body,
 						json: true,
-					});
-					returnData.push({ json: response.data });
+					})) as SuiteCRMRecordResponse;
+					returnData.push({ json: response.data ?? {} });
 
 				// UPDATE record
 				} else if (operation === 'update') {
 					const id = this.getNodeParameter('id', i) as string;
 					const attributes = parseJsonInput(this.getNodeParameter('data', i));
-					const body = {
-						data: { type: moduleName, id, attributes },
-					};
-					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+					const body = buildUpdateBody(moduleName, id, attributes);
+					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 						method: 'PATCH',
 						url,
 						body,
 						json: true,
-					});
-					returnData.push({ json: response.data });
+					})) as SuiteCRMRecordResponse;
+					returnData.push({ json: response.data ?? {} });
 
 				// DELETE record
 				} else if (operation === 'delete') {
@@ -191,18 +210,19 @@ export class SinergiaCRM implements INodeType {
 				} else if (operation === 'getRelationships') {
 					const id = this.getNodeParameter('id', i) as string;
 					const relationship = this.getNodeParameter('relationship', i) as string;
-					response = await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 						method: 'GET',
 						url: `${url}/${moduleName}/${id}/relationships/${relationship}`,
 						json: true,
-					});
-					returnData.push({ json: response.data });
+					})) as SuiteCRMRecordResponse;
+					returnData.push({ json: response.data ?? {} });
 				}
-			} catch (error: any) {
+			} catch (error) {
 				if (this.continueOnFail()) {
+					const message = error instanceof Error ? error.message : String(error);
 					returnData.push({
-						json: { error: error.message },
-						error,
+						json: { error: message },
+						error: error as NodeApiError,
 					});
 					continue;
 				}

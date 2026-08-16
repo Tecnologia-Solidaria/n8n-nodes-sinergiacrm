@@ -1,4 +1,5 @@
 // helpers/parse.ts
+import type { IDataObject } from 'n8n-workflow';
 
 /**
  * Safely parses a string or object input into a valid JSON object.
@@ -8,7 +9,7 @@
  * @returns Parsed object
  * @throws If the input is not a valid JSON object or string
  */
-export function parseJsonInput(input: unknown): Record<string, any> {
+export function parseJsonInput(input: unknown): IDataObject {
 	if (typeof input === 'string') {
 		try {
 			return JSON.parse(input);
@@ -17,7 +18,7 @@ export function parseJsonInput(input: unknown): Record<string, any> {
 		}
 	}
 	if (typeof input === 'object' && input !== null) {
-		return input as Record<string, any>;
+		return input as IDataObject;
 	}
 	throw new Error('SinergiaCRM: The "Data" field must be a valid JSON object or string.');
 }

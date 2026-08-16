@@ -63,8 +63,10 @@ export class SinergiaCRMCredentials implements ICredentialType {
 	 * - tokenRequestContentType: 'form' → application/x-www-form-urlencoded body (NOT JSON).
 	 * - accessTokenUrl: derived from domainUrl.
 	 */
-	// Use `any` to avoid TS narrowing to generic auth type; n8n validates at runtime.
-	authenticate: any = {
+	// The typed `ICredentialType['authenticate']` only covers the `generic` auth type,
+	// but the runtime OAuth2 extension consumes this `oauth2` shape, which n8n
+	// validates at runtime. We cast the value and keep the runtime object unchanged.
+	authenticate = {
 		type: 'oauth2',
 		properties: {
 			tokenType: 'Bearer',
@@ -74,7 +76,7 @@ export class SinergiaCRMCredentials implements ICredentialType {
 			accessTokenUrl: '={{$credentials.domainUrl}}/Api/access_token',
 			// Some SuiteCRM installations require lowercase /api instead of /Api. If authentication fails, try adjusting accordingly.
 		},
-	};
+	} as unknown as ICredentialType['authenticate'];
 
 	/**
 	 * Credential "test" request:

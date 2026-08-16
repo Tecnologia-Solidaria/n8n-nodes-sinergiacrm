@@ -1,4 +1,17 @@
+// methods.loadOptions.ts
 import type { ILoadOptionsFunctions } from 'n8n-workflow';
+
+interface ModuleMetaResponse {
+	data?: {
+		attributes?: Record<string, { label?: string }>;
+	};
+}
+
+interface RelationshipsResponse {
+	data?: {
+		relationships?: Record<string, { links?: { related?: string } }>;
+	};
+}
 
 /**
  * Load available modules from SinergiaCRM (SuiteCRM API).
@@ -9,7 +22,7 @@ export async function getModules(this: ILoadOptionsFunctions) {
 	const domainUrl = (credentials.domainUrl as string).replace(/\/$/, '');
 	const url = `${domainUrl}/Api/V8/meta/modules`;
 
-	const response = await this.helpers.requestWithAuthentication.call(
+	const response = (await this.helpers.requestWithAuthentication.call(
 		this,
 		'SinergiaCRMCredentials',
 		{
@@ -17,10 +30,10 @@ export async function getModules(this: ILoadOptionsFunctions) {
 			url,
 			json: true,
 		},
-	);
+	)) as ModuleMetaResponse;
 
 	const modulesObject = response.data?.attributes || {};
-	return Object.entries(modulesObject).map(([key, value]: [string, any]) => ({
+	return Object.entries(modulesObject).map(([key, value]) => ({
 		name: value.label || key,
 		value: key,
 	}));
@@ -39,7 +52,7 @@ export async function getModuleFields(this: ILoadOptionsFunctions) {
 
 	const url = `${domainUrl}/Api/V8/meta/fields/${module}`;
 
-	const response = await this.helpers.requestWithAuthentication.call(
+	const response = (await this.helpers.requestWithAuthentication.call(
 		this,
 		'SinergiaCRMCredentials',
 		{
@@ -47,10 +60,10 @@ export async function getModuleFields(this: ILoadOptionsFunctions) {
 			url,
 			json: true,
 		},
-	);
+	)) as ModuleMetaResponse;
 
 	const fields = response.data?.attributes || {};
-	const fieldOptions = Object.entries(fields).map(([key, value]: [string, any]) => ({
+	const fieldOptions = Object.entries(fields).map(([key, value]) => ({
 		name: value.label || key,
 		value: key,
 	}));
@@ -77,7 +90,7 @@ export async function getAvailableRelationships(this: ILoadOptionsFunctions) {
 
 	const url = `${domainUrl}/Api/V8/module/${module}/${recordId}`;
 
-	const response = await this.helpers.requestWithAuthentication.call(
+	const response = (await this.helpers.requestWithAuthentication.call(
 		this,
 		'SinergiaCRMCredentials',
 		{
@@ -85,23 +98,18 @@ export async function getAvailableRelationships(this: ILoadOptionsFunctions) {
 			url,
 			json: true,
 		},
-	);
+	)) as RelationshipsResponse;
 
 	const relationshipsObj = response.data?.relationships || {};
 	const relOptions: { name: string; value: string }[] = [];
 
 	for (const [relKey, relValue] of Object.entries(relationshipsObj)) {
-		if (
-			typeof relValue === 'object' &&
-			relValue !== null &&
-			'related' in ((relValue as any).links || {})
-		) {
-			const relatedLink = (relValue as any).links.related;
+		if (typeof relValue === 'object' && relValue !== null) {
+			const relatedLink = relValue.links?.related;
 			if (relatedLink) {
-				const value = relatedLink.split('/').pop();
 				relOptions.push({
 					name: relKey,
-					value: value,
+					value: relatedLink.split('/').pop() ?? '',
 				});
 			}
 		}
