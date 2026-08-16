@@ -35,7 +35,8 @@ export class SinergiaCRM implements INodeType {
 		icon: 'file:sinergiacrm.svg',
 		group: ['transform'],
 		version: 1,
-		description: 'Perform operations on any module in SinergiaCRM (SuiteCRM API).',
+		description: 'Create, update, read, link or unlink records in SinergiaCRM (SuiteCRM).',
+		usableAsTool: true,
 		defaults: {
 			name: 'SinergiaCRM',
 		},

@@ -50,4 +50,9 @@ describe('SinergiaCRMTrigger', () => {
 		expect(node.poll).toBeDefined();
 		expect(node.methods?.loadOptions).toBeDefined();
 	});
+
+	it('no es usable como herramienta (solo el nodo principal lo es)', () => {
+		const node = new SinergiaCRMTrigger();
+		expect(node.description.usableAsTool).toBeUndefined();
+	});
 });

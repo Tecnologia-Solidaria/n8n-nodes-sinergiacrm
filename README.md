@@ -11,7 +11,9 @@ Supports CRUD operations, dynamic module and field discovery (including custom f
 - **Full CRUD** – Create, read, update, and delete any SuiteCRM module
 - **Dynamic discovery** – Auto-lists modules and fields, including custom fields
 - **Advanced filtering** – Filter records using operators, custom fields, pagination
-- **Relationship handling** – Retrieve related records from any entity
+- **Relationship handling** – Retrieve, link, and unlink related records from any entity
+- **Polling trigger** – React to new or updated records without touching the CRM instance
+- **AI agent tool** – Use the main node as a tool from an n8n AI Agent
 - **OAuth2 authentication** – Native SuiteCRM client credentials flow
 - **Robust error handling** – Clear errors and maintainable structure
 
@@ -44,7 +46,8 @@ Add to your instance following [n8n's custom node guide](https://docs.n8n.io/int
 ### 2. Node Configuration
 
 - **Module:** Auto-discovered list from your API
-- **Operation:** Choose from Get All, Get One, Create, Update, Delete, Get Relationships
+- **Operation:** Choose from Get All, Get One, Create, Update, Delete, Get Relationships, Link Record, Unlink Record
+- **Data mode:** Define Create/Update payloads field by field, or with raw JSON
 - **Parameters:** Filters, IDs, pagination, or JSON payloads depending on operation
 
 ### 3. Example – Create a Contact
@@ -58,6 +61,20 @@ Input data:
 }
 ```
 
+### 4. Polling Trigger
+
+The **SinergiaCRM Trigger** node polls the selected modules and emits one item per new or updated record. Events are limited to `created` and `updated` (deletion detection is not supported). Cadence is configurable: every poll, every N hours/days, or a 5-field cron expression.
+
+### 5. AI Agent Tool
+
+The main SinergiaCRM node can be used as a tool by n8n's **AI Agent**. Community packages are only exposed as tools when the instance is started with:
+
+```bash
+N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+```
+
+Without that environment variable the node does not appear as a tool (the trigger node is never usable as a tool).
+
 ---
 
 ## Supported Operations
@@ -66,16 +83,19 @@ Input data:
 |------------------|-----------------------------------------------|
 | Get All          | Fetch records with optional filters & paging  |
 | Get One          | Retrieve a single record by ID                |
-| Create           | Add a new record (JSON fields)                |
-| Update           | Modify a record (PATCH with JSON)             |
+| Create           | Add a new record (field mode or JSON payload) |
+| Update           | Modify a record (field mode or JSON payload)  |
 | Delete           | Remove a record by ID                         |
 | Get Relationships| Fetch related records of a module by ID       |
+| Link Record      | Link an existing record to another            |
+| Unlink Record    | Break a link without deleting either record   |
 
 ---
 
 ## Requirements
 
 - SuiteCRM 7.x+ with API and OAuth2 enabled
+- SuiteCRM **≥ 7.11.4** is required for the **Unlink Record** operation (DELETE relationship endpoint)
 - All modules and fields are fetched dynamically
 - For 1:N relations, set the "parent" ID on the child (SuiteCRM logic)
 - Tested against SuiteCRM v7+ JSON API

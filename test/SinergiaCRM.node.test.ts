@@ -600,3 +600,16 @@ describe('SinergiaCRM.execute', () => {
 		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
 	});
 });
+
+describe('SinergiaCRM — herramienta de agentes (US5)', () => {
+	it('expone el nodo principal como usable como herramienta', () => {
+		const node = new SinergiaCRM();
+		expect(node.description.usableAsTool).toBe(true);
+	});
+
+	it('ofrece una descripción de herramienta en inglés y no vacía', () => {
+		const node = new SinergiaCRM();
+		expect(node.description.description.length).toBeGreaterThan(0);
+		expect(node.description.description).toMatch(/^[a-zA-Z0-9 ,.:()'/-]+$/);
+	});
+});
