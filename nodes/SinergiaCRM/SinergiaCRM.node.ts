@@ -78,7 +78,7 @@ export class SinergiaCRM implements INodeType {
 				displayName: 'Limit',
 				name: 'limit',
 				type: 'number',
-				default: 100,
+				default: '={{ $fromAI("limit", "Maximum number of records to return", "number", 100) }}',
 				description: 'Maximum number of records to return when Return All is disabled',
 				displayOptions: {
 					show: {

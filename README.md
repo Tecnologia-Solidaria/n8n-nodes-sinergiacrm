@@ -75,6 +75,16 @@ N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
 
 Without that environment variable the node does not appear as a tool (the trigger node is never usable as a tool).
 
+#### Letting the model fill in the data
+
+The node ships with `$fromAI()` defaults for its dynamic parameters, so the model controls them out of the box:
+
+- **`data`** – the record payload (Create / Update, Raw JSON mode)
+- **`id`** – the record ID (Get One, Update, Delete, Get Relationships)
+- **`limit`** – the page size (Get All with Return All disabled)
+
+`Module` and `Operation` stay fixed on the node: pin one module/operation per workflow (e.g. `Contacts` + `Create`), and the agent supplies `data` on each call. You can also enable/disable `$fromAI()` per field with the **"Defined automatically by the model"** button in the node editor.
+
 ---
 
 ## Supported Operations

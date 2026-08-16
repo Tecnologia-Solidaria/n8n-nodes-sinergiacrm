@@ -170,7 +170,7 @@ export const genericModuleOperations: INodeProperties[] = [
 		displayName: 'Record ID',
 		name: 'id',
 		type: 'string',
-		default: '',
+		default: '={{ $fromAI("id", "ID of the record", "string") }}',
 		required: true,
 		description: 'ID of the record',
 		displayOptions: {
@@ -338,7 +338,7 @@ export const genericModuleOperations: INodeProperties[] = [
 		displayName: 'Data (JSON)',
 		name: 'data',
 		type: 'json',
-		default: '{}',
+		default: '={{ $fromAI("data", "Fields and values of the record to create or update, as a JSON object", "json") }}',
 		required: true,
 		description: 'Fields and values as JSON',
 		displayOptions: {
