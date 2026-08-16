@@ -21,9 +21,12 @@ export default defineConfig({
 			provider: 'v8',
 			include: [
 				'nodes/SinergiaCRM/helpers/**',
+				'nodes/SinergiaCRM/operations/**',
 				'nodes/SinergiaCRM/methods.loadOptions.ts',
 				'nodes/SinergiaCRM/SinergiaCRM.node.ts',
+				'nodes/SinergiaCRM/SinergiaCRMTrigger.node.ts',
 			],
+			exclude: ['nodes/SinergiaCRM/helpers/types.ts'],
 			reporter: ['text'],
 			thresholds: {
 				lines: 80,

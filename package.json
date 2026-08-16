@@ -34,7 +34,8 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "nodes": [
-      "dist/nodes/SinergiaCRM/SinergiaCRM.node.js"
+      "dist/nodes/SinergiaCRM/SinergiaCRM.node.js",
+      "dist/nodes/SinergiaCRM/SinergiaCRMTrigger.node.js"
     ],
     "credentials": [
       "dist/credentials/SinergiaCRMCredentials.credentials.js"

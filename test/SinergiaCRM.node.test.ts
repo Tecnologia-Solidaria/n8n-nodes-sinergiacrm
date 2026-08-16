@@ -1,5 +1,6 @@
 // test/SinergiaCRM.node.test.ts
 import { describe, expect, it, vi } from 'vitest';
+import { NodeOperationError } from 'n8n-workflow';
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { SinergiaCRM } from '../nodes/SinergiaCRM/SinergiaCRM.node';
 
@@ -35,6 +36,7 @@ function createExecuteContext(overrides: NodeContextOverrides = {}) {
 			return Array.isArray(value) ? value[index ?? 0] : value;
 		}),
 		getCredentials: vi.fn().mockResolvedValue(credentials),
+		getNode: vi.fn().mockReturnValue({ name: 'SinergiaCRM', type: 'sinergiaCrm', typeVersion: 1 }),
 		continueOnFail: vi.fn().mockReturnValue(overrides.continueOnFail ?? false),
 		helpers: {
 			requestWithAuthentication,
@@ -297,5 +299,304 @@ describe('SinergiaCRM.execute', () => {
 		expect(result[0].json).toEqual({ id: 'acc-1' });
 		expect(result[1].json).toEqual({ id: 'acc-2' });
 		expect(requestWithAuthentication).toHaveBeenCalledTimes(2);
+	});
+
+	it('create sends the attributes built from fields mode', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'create',
+				dataMode: 'fields',
+				fields: {
+					Field: [
+						{ field: 'firstName', value: 'Ana' },
+						{ field: 'lastName', value: 'Perez' },
+					],
+				},
+			},
+			responses: [{ data: { id: 'c-1' } }],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result).toEqual([{ json: { id: 'c-1' } }]);
+		expect(requestWithAuthentication).toHaveBeenCalledWith(
+			'SinergiaCRMCredentials',
+			expect.objectContaining({
+				method: 'POST',
+				url: 'https://crm.example.com/Api/V8/module',
+				body: {
+					data: {
+						type: 'Contacts',
+						attributes: { firstName: 'Ana', lastName: 'Perez' },
+					},
+				},
+				json: true,
+			}),
+		);
+	});
+
+	it('create resolves custom fields to their technical name in fields mode', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'create',
+				dataMode: 'fields',
+				fields: {
+					Field: [{ field: '__custom__', customField: '  cstm_field_c ', value: 'x' }],
+				},
+			},
+			responses: [{ data: { id: 'c-1' } }],
+		});
+
+		await node.execute.call(context);
+
+		expect(requestWithAuthentication).toHaveBeenCalledWith(
+			'SinergiaCRMCredentials',
+			expect.objectContaining({
+				body: {
+					data: {
+						type: 'Contacts',
+						attributes: { cstm_field_c: 'x' },
+					},
+				},
+			}),
+		);
+	});
+
+	it('update sends only the attributes built from fields mode', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'update',
+				id: 'c-1',
+				dataMode: 'fields',
+				fields: { Field: [{ field: 'firstName', value: 'Ana Maria' }] },
+			},
+			responses: [{ data: { id: 'c-1' } }],
+		});
+
+		await node.execute.call(context);
+
+		expect(requestWithAuthentication).toHaveBeenCalledWith(
+			'SinergiaCRMCredentials',
+			expect.objectContaining({
+				method: 'PATCH',
+				url: 'https://crm.example.com/Api/V8/module',
+				body: {
+					data: {
+						type: 'Contacts',
+						id: 'c-1',
+						attributes: { firstName: 'Ana Maria' },
+					},
+				},
+				json: true,
+			}),
+		);
+	});
+
+	it('create in rawJson mode accepts a JSON string', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'create',
+				dataMode: 'rawJson',
+				data: '{"firstName":"Ana","lastName":"Perez"}',
+			},
+			responses: [{ data: { id: 'c-1' } }],
+		});
+
+		await node.execute.call(context);
+
+		expect(requestWithAuthentication).toHaveBeenCalledWith(
+			'SinergiaCRMCredentials',
+			expect.objectContaining({
+				body: {
+					data: {
+						type: 'Contacts',
+						attributes: { firstName: 'Ana', lastName: 'Perez' },
+					},
+				},
+			}),
+		);
+	});
+
+	it('rejects invalid raw JSON and does not execute the operation', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'create',
+				dataMode: 'rawJson',
+				data: 'not json',
+			},
+		});
+
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
+		expect(requestWithAuthentication).not.toHaveBeenCalled();
+	});
+
+	it('rejects create with an empty fields list and does not execute the operation', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'create',
+				dataMode: 'fields',
+				fields: {},
+			},
+		});
+
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
+		expect(requestWithAuthentication).not.toHaveBeenCalled();
+	});
+
+	it('rejects fields mode with an empty value', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'create',
+				dataMode: 'fields',
+				fields: { Field: [{ field: 'firstName', value: '' }] },
+			},
+		});
+
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
+		expect(requestWithAuthentication).not.toHaveBeenCalled();
+	});
+
+	it('linkRecord links an existing related record', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Accounts',
+				operation: 'linkRecord',
+				recordId: 'acc-1',
+				relationship: 'contacts',
+				relatedModule: 'Contacts',
+				relatedId: 'c-1',
+			},
+			responses: [{ data: [] }, { data: { id: 'c-1', type: 'Contacts' } }],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result).toEqual([{ json: { id: 'c-1', type: 'Contacts' } }]);
+		expect(requestWithAuthentication).toHaveBeenNthCalledWith(
+			1,
+			'SinergiaCRMCredentials',
+			expect.objectContaining({
+				method: 'GET',
+				url: 'https://crm.example.com/Api/V8/module/Accounts/acc-1/relationships/contacts',
+				json: true,
+			}),
+		);
+		expect(requestWithAuthentication).toHaveBeenNthCalledWith(
+			2,
+			'SinergiaCRMCredentials',
+			expect.objectContaining({
+				method: 'POST',
+				url: 'https://crm.example.com/Api/V8/module/Accounts/acc-1/relationships/contacts',
+				body: { data: { type: 'Contacts', id: 'c-1' } },
+				json: true,
+			}),
+		);
+	});
+
+	it('linkRecord rejects a non-existent related record without modifying data', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Accounts',
+				operation: 'linkRecord',
+				recordId: 'acc-1',
+				relationship: 'contacts',
+				relatedModule: 'Contacts',
+				relatedId: 'missing',
+			},
+			responses: [{ data: [] }, Object.assign(new Error('not found'), { statusCode: 404 })],
+		});
+
+		const error = await node.execute.call(context).catch((e: unknown) => e);
+
+		expect(error).toBeInstanceOf(NodeOperationError);
+		expect((error as Error).message).toContain('missing');
+		expect(requestWithAuthentication).toHaveBeenCalledTimes(2);
+	});
+
+	it('linkRecord is idempotent when the relationship already exists', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Accounts',
+				operation: 'linkRecord',
+				recordId: 'acc-1',
+				relationship: 'contacts',
+				relatedModule: 'Contacts',
+				relatedId: 'c-1',
+			},
+			responses: [{ data: [{ id: 'c-1', type: 'Contacts' }] }],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result).toEqual([
+			{ json: { success: true, alreadyLinked: true, id: 'c-1', type: 'Contacts' } },
+		]);
+		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+	});
+
+	it('linkRecord rejects linking a record to itself', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'linkRecord',
+				recordId: 'c-1',
+				relationship: 'accounts',
+				relatedModule: 'Contacts',
+				relatedId: 'c-1',
+			},
+		});
+
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
+		expect(requestWithAuthentication).not.toHaveBeenCalled();
+	});
+
+	it('unlinkRecord unlinks a record via DELETE', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Accounts',
+				operation: 'unlinkRecord',
+				recordId: 'acc-1',
+				relationship: 'contacts',
+				relatedId: 'c-1',
+			},
+			responses: [{ data: {} }],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result).toEqual([{ json: { success: true, id: 'c-1' } }]);
+		expect(requestWithAuthentication).toHaveBeenCalledWith(
+			'SinergiaCRMCredentials',
+			expect.objectContaining({
+				method: 'DELETE',
+				url: 'https://crm.example.com/Api/V8/module/Accounts/acc-1/relationships/contacts/c-1',
+				json: true,
+			}),
+		);
+	});
+
+	it('unlinkRecord reports clearly when the relationship does not exist', async () => {
+		const { context, requestWithAuthentication, node } = createExecuteContext({
+			params: {
+				module: 'Accounts',
+				operation: 'unlinkRecord',
+				recordId: 'acc-1',
+				relationship: 'contacts',
+				relatedId: 'c-1',
+			},
+			responses: [Object.assign(new Error('not found'), { statusCode: 404 })],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result).toEqual([{ json: { success: true, alreadyUnlinked: true, id: 'c-1' } }]);
+		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
 	});
 });

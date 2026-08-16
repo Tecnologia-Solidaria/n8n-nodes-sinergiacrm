@@ -7,24 +7,21 @@ import type {
 import { NodeConnectionType } from 'n8n-workflow';
 import type { IDataObject, NodeApiError } from 'n8n-workflow';
 import type { FilterOptions } from './helpers/filters';
+import type { SuiteCRMListResponse, SuiteCRMRecordResponse } from './helpers/types';
 
 import * as methods from './methods.loadOptions';
-import { genericModuleOperations } from './operations/GenericModule.operations';
-import { parseJsonInput } from './helpers/parse';
+import {
+	createRecord,
+	genericModuleOperations,
+	linkRecord,
+	unlinkRecord,
+	updateRecord,
+} from './operations/GenericModule.operations';
 import { buildListQuery, resolvePageSize, shouldFetchNextPage } from './helpers/query';
-import { buildCreateBody, buildUpdateBody } from './helpers/record';
 
 interface GetAllOptions {
 	pageSize?: number;
 	filters?: FilterOptions;
-}
-
-interface SuiteCRMListResponse {
-	data?: IDataObject[];
-}
-
-interface SuiteCRMRecordResponse {
-	data?: IDataObject;
 }
 
 /**
@@ -173,28 +170,23 @@ export class SinergiaCRM implements INodeType {
 
 				// CREATE record
 				} else if (operation === 'create') {
-					const attributes = parseJsonInput(this.getNodeParameter('data', i));
-					const body = buildCreateBody(moduleName, attributes);
-					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
-						method: 'POST',
-						url,
-						body,
-						json: true,
-					})) as SuiteCRMRecordResponse;
-					returnData.push({ json: response.data ?? {} });
+					const responseData = await createRecord.call(this, moduleName, url, i);
+					returnData.push({ json: responseData });
 
 				// UPDATE record
 				} else if (operation === 'update') {
-					const id = this.getNodeParameter('id', i) as string;
-					const attributes = parseJsonInput(this.getNodeParameter('data', i));
-					const body = buildUpdateBody(moduleName, id, attributes);
-					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
-						method: 'PATCH',
-						url,
-						body,
-						json: true,
-					})) as SuiteCRMRecordResponse;
-					returnData.push({ json: response.data ?? {} });
+					const responseData = await updateRecord.call(this, moduleName, url, i);
+					returnData.push({ json: responseData });
+
+				// LINK an existing record to another
+				} else if (operation === 'linkRecord') {
+					const responseData = await linkRecord.call(this, moduleName, url, i);
+					returnData.push({ json: responseData });
+
+				// UNLINK a record
+				} else if (operation === 'unlinkRecord') {
+					const responseData = await unlinkRecord.call(this, moduleName, url, i);
+					returnData.push({ json: responseData });
 
 				// DELETE record
 				} else if (operation === 'delete') {

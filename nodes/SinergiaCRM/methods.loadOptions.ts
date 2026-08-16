@@ -84,7 +84,7 @@ export async function getAvailableRelationships(this: ILoadOptionsFunctions) {
 	const credentials = await this.getCredentials('SinergiaCRMCredentials');
 	const domainUrl = (credentials.domainUrl as string).replace(/\/$/, '');
 	const module = this.getCurrentNodeParameter('module') as string;
-	const recordId = this.getCurrentNodeParameter('id') as string;
+	const recordId = (this.getCurrentNodeParameter('recordId') ?? this.getCurrentNodeParameter('id')) as string;
 
 	if (!module || !recordId) return [];
 

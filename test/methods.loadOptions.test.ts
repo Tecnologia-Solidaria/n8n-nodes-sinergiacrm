@@ -121,7 +121,23 @@ describe('getAvailableRelationships', () => {
 		expect(result).toEqual([{ name: 'contacts', value: 'rel-123' }]);
 	});
 
-	it('returns an empty list when module or id is missing', async () => {
+	it('reads the recordId parameter used by Link Record (bug relationship dropdown vacío)', async () => {
+		const { context, requestWithAuthentication } = createContext({
+			params: { module: 'Accounts', recordId: 'acc-2' },
+			response: { data: { relationships } },
+		});
+
+		const result = await getAvailableRelationships.call(context);
+
+		expect(result).toEqual([{ name: 'contacts', value: 'rel-123' }]);
+		const [, requestOptions] = requestWithAuthentication.mock.calls[0] as [
+			string,
+			{ url: string },
+		];
+		expect(requestOptions.url).toBe('https://crm.example.com/Api/V8/module/Accounts/acc-2');
+	});
+
+	it('returns an empty list when module or recordId is missing', async () => {
 		const { context } = createContext({ params: { module: 'Accounts' } });
 
 		expect(await getAvailableRelationships.call(context)).toEqual([]);
