@@ -21,17 +21,15 @@ Supports CRUD operations, dynamic module and field discovery (including custom f
 
 ## Installation
 
-```bash
-pnpm add n8n-nodes-sinergiacrm
-```
+**Recommended:** install from the n8n UI under **Settings → Community Nodes**, entering the package name `n8n-nodes-sinergiacrm`.
 
-Or with npm:
+**Self-hosted via CLI:** install it into your n8n instance:
 
 ```bash
 npm install n8n-nodes-sinergiacrm
 ```
 
-Add to your instance following [n8n's custom node guide](https://docs.n8n.io/integrations/creating-nodes/code/create-node/).
+Then restart n8n. See the [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/installation/) for details.
 
 ---
 
@@ -85,6 +83,10 @@ The node ships with `$fromAI()` defaults for its dynamic parameters, so the mode
 
 `Module` and `Operation` stay fixed on the node: pin one module/operation per workflow (e.g. `Contacts` + `Create`), and the agent supplies `data` on each call. You can also enable/disable `$fromAI()` per field with the **"Defined automatically by the model"** button in the node editor.
 
+#### Using it through an MCP server
+
+Because the node is `usableAsTool`, n8n's **MCP Server** trigger exposes it automatically to any MCP client. Connect the node as a tool in an MCP Server workflow, point your client at the server's URL, and the model can call the same operations directly (e.g. `Get All` exposes a `limit` parameter, `Create` exposes a required `data` payload).
+
 ---
 
 ## Supported Operations
@@ -104,6 +106,7 @@ The node ships with `$fromAI()` defaults for its dynamic parameters, so the mode
 
 ## Requirements
 
+- n8n 1.x or newer
 - SuiteCRM 7.x+ with API and OAuth2 enabled
 - SuiteCRM **≥ 7.11.4** is required for the **Unlink Record** operation (DELETE relationship endpoint)
 - All modules and fields are fetched dynamically
@@ -116,7 +119,7 @@ The node ships with `$fromAI()` defaults for its dynamic parameters, so the mode
 
 - `access_token` missing → Check credentials or OAuth2 setup
 - `405 Method Not Allowed` → PATCH may not be enabled in your SuiteCRM
-- Any API error is returned as node output for transparency
+- API and validation errors are thrown as n8n node errors. To keep the workflow running after an error, enable **Continue On Fail** on the node.
 
 ---
 
