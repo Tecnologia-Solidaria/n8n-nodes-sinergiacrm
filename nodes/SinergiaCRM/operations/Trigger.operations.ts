@@ -5,6 +5,7 @@ import type { SuiteCRMListResponse } from '../helpers/types';
 const TRIGGER_PAGE_SIZE = 50;
 const TRIGGER_MAX_PAGES = 10;
 const TRIGGER_DEDUP_CAP = 500;
+const TRIGGER_SAMPLE_SIZE = 10;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 
@@ -256,12 +257,103 @@ async function fetchWindow(
 	return { records: collected, truncated: true };
 }
 
+function buildOutputItem(
+	moduleName: string,
+	event: 'created' | 'updated',
+	record: IDataObject,
+	id: string,
+	dateEntered: string,
+	dateModified: string,
+): INodeExecutionData {
+	const attributes =
+		record.attributes && typeof record.attributes === 'object' && !Array.isArray(record.attributes)
+			? record.attributes
+			: {};
+	return {
+		json: {
+			module: moduleName,
+			event,
+			id,
+			date_entered: dateEntered,
+			date_modified: dateModified,
+			...attributes,
+		},
+	};
+}
+
+/**
+ * Returns a sample of the most recent records for the selected modules.
+ * Used when the node is executed manually from the editor so the user can
+ * inspect the data shape without waiting for the next poll. The cursor and
+ * the deduplication state are left untouched.
+ */
+async function pollSample(
+	this: IPollFunctions,
+	modules: string[],
+	events: string[],
+): Promise<INodeExecutionData[][] | null> {
+	if (modules.length === 0) {
+		return null;
+	}
+
+	const credentials = await this.getCredentials('SinergiaCRMCredentials');
+	const baseUrl = (credentials.domainUrl as string).replace(/\/$/, '');
+	const url = `${baseUrl}/Api/V8/module`;
+
+	const sample: INodeExecutionData[] = [];
+
+	for (const moduleName of modules) {
+		const response = (await this.helpers.requestWithAuthentication.call(
+			this,
+			'SinergiaCRMCredentials',
+			{
+				method: 'GET',
+				url: `${url}/${moduleName}`,
+				qs: {
+					sort: '-date_modified',
+					'page[size]': TRIGGER_SAMPLE_SIZE,
+					'page[number]': 1,
+				},
+				json: true,
+			},
+		)) as SuiteCRMListResponse;
+
+		for (const record of response.data ?? []) {
+			const id = record.id;
+			const dateEntered = recordDate(record, 'date_entered');
+			const dateModified = recordDate(record, 'date_modified');
+			if (typeof id !== 'string' || !id || !dateEntered || !dateModified) {
+				continue;
+			}
+
+			const event = classifyEvent(
+				{ date_entered: dateEntered, date_modified: dateModified },
+				dateModified,
+			);
+			if (!events.includes(event)) {
+				continue;
+			}
+
+			sample.push(buildOutputItem(moduleName, event, record, id, dateEntered, dateModified));
+		}
+	}
+
+	return sample.length > 0 ? [sample] : null;
+}
+
 /**
  * Polls SinergiaCRM for new or updated records in the selected modules.
  */
 export async function poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null> {
 	const staticData = this.getWorkflowStaticData('node');
 	const now = new Date();
+
+	const modules = this.getNodeParameter('module', []) as string[];
+	const events = this.getNodeParameter('events', ['created', 'updated']) as string[];
+
+	if (this.getMode() === 'manual') {
+		return await pollSample.call(this, modules, events);
+	}
 
 	const checkInterval = this.getNodeParameter('checkInterval', 'everyPoll') as string;
 	const numberHours = this.getNodeParameter('numberHours', 1) as number;
@@ -277,9 +369,6 @@ export async function poll(this: IPollFunctions): Promise<INodeExecutionData[][]
 	) {
 		return null;
 	}
-
-	const modules = this.getNodeParameter('module', []) as string[];
-	const events = this.getNodeParameter('events', ['created', 'updated']) as string[];
 
 	const credentials = await this.getCredentials('SinergiaCRMCredentials');
 	const baseUrl = (credentials.domainUrl as string).replace(/\/$/, '');
@@ -341,20 +430,7 @@ export async function poll(this: IPollFunctions): Promise<INodeExecutionData[][]
 				continue;
 			}
 
-			const attributes =
-				record.attributes && typeof record.attributes === 'object' && !Array.isArray(record.attributes)
-					? record.attributes
-					: {};
-			emitted.push({
-				json: {
-					module: moduleName,
-					event,
-					id,
-					date_entered: dateEntered,
-					date_modified: dateModified,
-					...attributes,
-				},
-			});
+			emitted.push(buildOutputItem(moduleName, event, record, id, dateEntered, dateModified));
 		}
 
 		if (newest && normalizeTimestamp(newest) > normalizeTimestamp(cursor)) {

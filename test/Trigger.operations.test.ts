@@ -12,6 +12,7 @@ interface TriggerContextOverrides {
 	params?: Record<string, unknown>;
 	staticData?: IDataObject;
 	responses?: unknown[];
+	mode?: string;
 }
 
 function createPollContext(overrides: TriggerContextOverrides = {}) {
@@ -32,6 +33,7 @@ function createPollContext(overrides: TriggerContextOverrides = {}) {
 		getNodeParameter: vi.fn().mockImplementation((name: string) => overrides.params?.[name]),
 		getCredentials: vi.fn().mockResolvedValue({ domainUrl: 'https://crm.example.com/' }),
 		getWorkflowStaticData: vi.fn().mockReturnValue(staticData),
+		getMode: vi.fn().mockReturnValue(overrides.mode ?? 'trigger'),
 		helpers: {
 			requestWithAuthentication,
 		},
@@ -335,5 +337,74 @@ describe('Trigger.operations — checkInterval y poll sin novedades (T021)', () 
 		expect(result).toBeNull();
 		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
 		expect(staticData.cursors).toEqual({ Accounts: '2024-05-02T10:00:00' });
+	});
+});
+
+describe('Trigger.operations — ejecución manual (sample)', () => {
+	it('en modo manual devuelve los últimos registros sin tocar el staticData', async () => {
+		const staticData: IDataObject = { cursors: { Accounts: '2024-05-01T09:00:00' } };
+		const { context, requestWithAuthentication } = createPollContext({
+			mode: 'manual',
+			params: DEFAULT_PARAMS,
+			staticData,
+			responses: [
+				{
+					data: [
+						makeRecord('sample-1', '2024-05-02T12:00:00', '2024-05-02T12:00:00'),
+						makeRecord('sample-2', '2024-05-02T11:00:00', '2024-05-02T11:00:00'),
+					],
+				},
+			],
+		});
+
+		const result = await poll.call(context);
+
+		expect(result![0]).toHaveLength(2);
+		expect(result![0][0].json).toMatchObject({
+			module: 'Accounts',
+			event: 'created',
+			id: 'sample-1',
+			date_modified: '2024-05-02T12:00:00',
+			name: 'Account sample-1',
+		});
+		expect(staticData).toEqual({ cursors: { Accounts: '2024-05-01T09:00:00' } });
+		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+		const [, requestOptions] = requestWithAuthentication.mock.calls[0] as [string, { qs: object }];
+		expect(requestOptions.qs).toEqual({
+			sort: '-date_modified',
+			'page[size]': 10,
+			'page[number]': 1,
+		});
+	});
+
+	it('en modo manual aplica el filtro de events', async () => {
+		const { context } = createPollContext({
+			mode: 'manual',
+			params: { ...DEFAULT_PARAMS, events: ['created'] },
+			responses: [
+				{
+					data: [
+						makeRecord('new-1', '2024-05-02T10:00:00', '2024-05-02T10:00:00'),
+						makeRecord('old-1', '2024-05-02T11:00:00', '2024-05-01T08:00:00'),
+					],
+				},
+			],
+		});
+
+		const result = await poll.call(context);
+
+		expect(result![0]).toHaveLength(1);
+		expect(result![0][0].json.id).toBe('new-1');
+		expect(result![0][0].json.event).toBe('created');
+	});
+
+	it('en modo manual devuelve null cuando no hay módulos configurados', async () => {
+		const { context } = createPollContext({
+			mode: 'manual',
+			params: { ...DEFAULT_PARAMS, module: [] },
+			responses: [],
+		});
+
+		expect(await poll.call(context)).toBeNull();
 	});
 });
