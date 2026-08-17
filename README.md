@@ -1,6 +1,6 @@
 ﻿# n8n-nodes-sinergiacrm
 
-A generic n8n node to operate with any SinergiaCRM (8.x+) module via the official JSON API.
+A generic n8n node to operate with any SinergiaCRM (7.x+) module via the official JSON API.
 
 Supports CRUD operations, dynamic module and field discovery (including custom fields), advanced filtering, pagination, and relationship retrieval.
 
