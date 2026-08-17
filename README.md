@@ -1,6 +1,6 @@
-# n8n-nodes-sinergiacrm
+﻿# n8n-nodes-sinergiacrm
 
-A generic n8n node to operate with any SinergiaCRM (SuiteCRM 7.x+) module via the official JSON API.
+A generic n8n node to operate with any SinergiaCRM (8.x+) module via the official JSON API.
 
 Supports CRUD operations, dynamic module and field discovery (including custom fields), advanced filtering, pagination, and relationship retrieval.
 
@@ -8,13 +8,13 @@ Supports CRUD operations, dynamic module and field discovery (including custom f
 
 ## Features
 
-- **Full CRUD** – Create, read, update, and delete any SuiteCRM module
+- **Full CRUD** – Create, read, update, and delete any SinergiaCRM module
 - **Dynamic discovery** – Auto-lists modules and fields, including custom fields
 - **Advanced filtering** – Filter records using operators, custom fields, pagination
 - **Relationship handling** – Retrieve, link, and unlink related records from any entity
 - **Polling trigger** – React to new or updated records without touching the CRM instance
 - **AI agent tool** – Use the main node as a tool from an n8n AI Agent
-- **OAuth2 authentication** – Native SuiteCRM client credentials flow
+- **OAuth2 authentication** – Native SinergiaCRM client credentials flow
 - **Robust error handling** – Clear errors and maintainable structure
 
 ---
@@ -38,8 +38,8 @@ Then restart n8n. See the [n8n community nodes documentation](https://docs.n8n.i
 ### 1. Credentials
 
 - Create credentials in n8n of type **SinergiaCRM API**
-- Fill in your SuiteCRM domain, Client ID, and Client Secret  
-  *(see SuiteCRM → Admin → OAuth2 Clients)*
+- Fill in your SinergiaCRM domain, Client ID, and Client Secret  
+  *(see SinergiaCRM → Admin → OAuth2 Clients)*
 
 ### 2. Node Configuration
 
@@ -107,18 +107,18 @@ Because the node is `usableAsTool`, n8n's **MCP Server** trigger exposes it auto
 ## Requirements
 
 - n8n 1.x or newer
-- SuiteCRM 7.x+ with API and OAuth2 enabled
-- SuiteCRM **≥ 7.11.4** is required for the **Unlink Record** operation (DELETE relationship endpoint)
+- SinergiaCRM 7.x+ with API and OAuth2 enabled
+- SinergiaCRM **≥ 7.11.4** is required for the **Unlink Record** operation (DELETE relationship endpoint)
 - All modules and fields are fetched dynamically
-- For 1:N relations, set the "parent" ID on the child (SuiteCRM logic)
-- Tested against SuiteCRM v7+ JSON API
+- For 1:N relations, set the "parent" ID on the child (SinergiaCRM logic)
+- Tested against SinergiaCRM v7+ JSON API
 
 ---
 
 ## Troubleshooting
 
 - `access_token` missing → Check credentials or OAuth2 setup
-- `405 Method Not Allowed` → PATCH may not be enabled in your SuiteCRM
+- `405 Method Not Allowed` → PATCH may not be enabled in your SinergiaCRM
 - API and validation errors are thrown as n8n node errors. To keep the workflow running after an error, enable **Continue On Fail** on the node.
 
 ---
@@ -137,6 +137,6 @@ MIT
 ---
 
 **Maintainer:** Javier Quilez Cabello / [tecnologiasolidaria.org](https://tecnologiasolidaria.org)  
-**Support:** [SuiteCRM Forums](https://community.suitecrm.com/)  
-**Source:** [GitHub](https://github.com/tecnologiasolidaria/n8n-nodes-sinergiacrm)  
-**Docs:** [SuiteCRM JSON API](https://docs.suitecrm.com/developer/api/developer-setup-guide/json-api/)
+**Support:** [SinergiaCRM Forums](https://community.SinergiaCRM.com/)  
+**Source:** [GitHub](https://github.com/tecnologiasolidaria/n8n-nodes-SinergiaCRM)  
+**Docs:** [SinergiaCRM JSON API](https://docs.SinergiaCRM.com/developer/api/developer-setup-guide/json-api/)

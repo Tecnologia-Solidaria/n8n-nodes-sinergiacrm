@@ -1,4 +1,4 @@
-// nodes/SinergiaCRM/operations/GenericModule.operations.ts
+﻿// nodes/SinergiaCRM/operations/GenericModule.operations.ts
 import { NodeOperationError } from 'n8n-workflow';
 import type { IDataObject, IExecuteFunctions, INodeProperties } from 'n8n-workflow';
 import {
@@ -10,13 +10,13 @@ import {
 import { parseJsonInput } from '../helpers/parse';
 import { buildCreateBody, buildLinkBody, buildUpdateBody } from '../helpers/record';
 import type {
-	SuiteCRMLinkResponse,
-	SuiteCRMListResponse,
-	SuiteCRMRecordResponse,
+	SinergiaCRMLinkResponse,
+	SinergiaCRMListResponse,
+	SinergiaCRMRecordResponse,
 } from '../helpers/types';
 
 /**
- * Generic CRUD operations and relationships for any SuiteCRM module.
+ * Generic CRUD operations and relationships for any SinergiaCRM module.
  * - "Operation" exposes all main CRUD plus relationship get/link.
  * - Options support pagination and dynamic filters.
  */
@@ -405,7 +405,7 @@ export async function createRecord(
 		url: baseUrl,
 		body: body as unknown as IDataObject,
 		json: true,
-	})) as SuiteCRMRecordResponse;
+	})) as SinergiaCRMRecordResponse;
 	return response.data ?? {};
 }
 
@@ -426,7 +426,7 @@ export async function updateRecord(
 		url: baseUrl,
 		body: body as unknown as IDataObject,
 		json: true,
-	})) as SuiteCRMRecordResponse;
+	})) as SinergiaCRMRecordResponse;
 	return response.data ?? {};
 }
 
@@ -475,7 +475,7 @@ export async function linkRecord(
 		method: 'GET',
 		url: relationshipsUrl,
 		json: true,
-	})) as SuiteCRMListResponse;
+	})) as SinergiaCRMListResponse;
 	if (existing.data?.some((record) => record.id === relatedId)) {
 		return { success: true, alreadyLinked: true, id: relatedId, type: relatedModule };
 	}
@@ -487,7 +487,7 @@ export async function linkRecord(
 			url: relationshipsUrl,
 			body: body as unknown as IDataObject,
 			json: true,
-		})) as SuiteCRMLinkResponse;
+		})) as SinergiaCRMLinkResponse;
 		return (response.data as unknown as IDataObject) ?? { success: true, id: relatedId, type: relatedModule };
 	} catch (error) {
 		if (getErrorStatus(error) === 404) {

@@ -1,7 +1,7 @@
-{
+﻿{
   "name": "n8n-nodes-sinergiacrm",
-  "version": "2.2.0",
-  "description": "A generic n8n node to operate with any SinergiaCRM (SuiteCRM 7.x+) module via the official JSON API.",
+  "version": "2.2.1",
+  "description": "A generic n8n node to operate with any SinergiaCRM (8.x+) module via the official JSON API.",
   "main": "dist/nodes/SinergiaCRM/SinergiaCRM.node.js",
   "types": "dist/nodes/SinergiaCRM/SinergiaCRM.node.d.ts",
   "scripts": {
@@ -14,7 +14,7 @@
   "keywords": [
     "n8n",
     "sinergiacrm",
-    "suitecrm",
+    "SinergiaCRM",
     "n8n-node",
     "n8n-nodes",
     "n8n-custom-node",
@@ -26,10 +26,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tecnologia-Solidaria/n8n-nodes-sinergiacrm"
+    "url": "https://github.com/Tecnologia-Solidaria/n8n-nodes-SinergiaCRM"
   },
   "bugs": {
-    "url": "https://github.com/Tecnologia-Solidaria/n8n-nodes-sinergiacrm/issues"
+    "url": "https://github.com/Tecnologia-Solidaria/n8n-nodes-SinergiaCRM/issues"
   },
   "n8n": {
     "n8nNodesApiVersion": 1,
@@ -42,6 +42,7 @@
     ]
   },
   "devDependencies": {
+    "@n8n/node-cli": "^0.43.4",
     "@types/node": "^24.0.13",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",

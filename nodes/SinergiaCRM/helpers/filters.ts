@@ -1,4 +1,4 @@
-// helpers/filters.ts
+﻿// helpers/filters.ts
 import type { IDataObject } from 'n8n-workflow';
 
 export interface FilterEntry {
@@ -13,7 +13,7 @@ export interface FilterOptions {
 }
 
 /**
- * Operators supported by the SuiteCRM v8 filter syntax.
+ * Operators supported by the SinergiaCRM v8 filter syntax.
  */
 export const SUPPORTED_OPERATORS: Record<string, string> = {
 	eq: 'EQ',

@@ -1,4 +1,4 @@
-// test/SinergiaCRMTrigger.node.test.ts
+﻿// test/SinergiaCRMTrigger.node.test.ts
 import { describe, expect, it } from 'vitest';
 import { SinergiaCRMTrigger } from '../nodes/SinergiaCRM/SinergiaCRMTrigger.node';
 
@@ -6,7 +6,7 @@ describe('SinergiaCRMTrigger', () => {
 	it('expone un nodo de polling con la descripción correcta', () => {
 		const node = new SinergiaCRMTrigger();
 
-		expect(node.description.name).toBe('sinergiaCRMTrigger');
+		expect(node.description.name).toBe('SinergiaCRMTrigger');
 		expect(node.description.displayName).toBe('SinergiaCRM Trigger');
 		expect(node.description.group).toEqual(['trigger']);
 		expect(node.description.inputs).toEqual([]);

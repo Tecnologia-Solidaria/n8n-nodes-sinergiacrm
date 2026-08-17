@@ -1,4 +1,4 @@
-// helpers/query.ts
+﻿// helpers/query.ts
 import type { IDataObject } from 'n8n-workflow';
 import { buildFilters, type FilterOptions } from './filters';
 

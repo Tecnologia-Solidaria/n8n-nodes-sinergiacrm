@@ -1,6 +1,6 @@
-// operations/Trigger.operations.ts
+﻿// operations/Trigger.operations.ts
 import type { IDataObject, INodeExecutionData, IPollFunctions } from 'n8n-workflow';
-import type { SuiteCRMListResponse } from '../helpers/types';
+import type { SinergiaCRMListResponse } from '../helpers/types';
 
 const TRIGGER_PAGE_SIZE = 50;
 const TRIGGER_MAX_PAGES = 10;
@@ -209,7 +209,7 @@ async function seedCursor(this: IPollFunctions, url: string, moduleName: string)
 			},
 			json: true,
 		},
-	)) as SuiteCRMListResponse;
+	)) as SinergiaCRMListResponse;
 
 	let newest = '';
 	for (const record of response.data ?? []) {
@@ -244,7 +244,7 @@ async function fetchWindow(
 				},
 				json: true,
 			},
-		)) as SuiteCRMListResponse;
+		)) as SinergiaCRMListResponse;
 
 		const records = response.data ?? [];
 		collected.push(...records);
@@ -316,7 +316,7 @@ async function pollSample(
 				},
 				json: true,
 			},
-		)) as SuiteCRMListResponse;
+		)) as SinergiaCRMListResponse;
 
 		for (const record of response.data ?? []) {
 			const id = record.id;
@@ -393,7 +393,7 @@ export async function poll(this: IPollFunctions): Promise<INodeExecutionData[][]
 			continue;
 		}
 
-		// Some SuiteCRM setups do not apply a strict `>` when comparing datetime
+		// Some SinergiaCRM setups do not apply a strict `>` when comparing datetime
 		// columns, so a record whose `date_modified` equals the cursor can be
 		// returned again on every poll. Deduplicate those boundary records using
 		// the ids emitted while the cursor sat at the same timestamp.

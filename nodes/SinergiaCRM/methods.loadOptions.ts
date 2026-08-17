@@ -1,4 +1,4 @@
-// methods.loadOptions.ts
+﻿// methods.loadOptions.ts
 import type { ILoadOptionsFunctions } from 'n8n-workflow';
 
 interface ModuleMetaResponse {
@@ -14,7 +14,7 @@ interface RelationshipsResponse {
 }
 
 /**
- * Load available modules from SinergiaCRM (SuiteCRM API).
+ * Load available modules from SinergiaCRM (SinergiaCRM API).
  * Uses OAuth2 client_credentials handled by n8n.
  */
 export async function getModules(this: ILoadOptionsFunctions) {

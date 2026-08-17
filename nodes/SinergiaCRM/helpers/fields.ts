@@ -1,4 +1,4 @@
-// helpers/fields.ts
+﻿// helpers/fields.ts
 import type { IDataObject } from 'n8n-workflow';
 
 export interface FieldEntry {

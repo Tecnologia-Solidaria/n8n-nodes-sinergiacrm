@@ -1,10 +1,10 @@
-// credentials/SinergiaCRMCredentials.credentials.ts
+﻿// credentials/SinergiaCRMCredentials.credentials.ts
 //
-// SinergiaCRM (SuiteCRM) OAuth2 credentials for n8n
+// SinergiaCRM OAuth2 credentials for n8n
 // --------------------------------------------------
 // This credential uses OAuth2 Client Credentials flow.
 // We enforce form-encoded token requests and send client_id/client_secret in the body,
-// matching SuiteCRM expectations for /Api/access_token.
+// matching SinergiaCRM expectations for /Api/access_token.
 //
 // NOTE: The credential "test" is intentionally minimal (GET to Domain URL)
 // to avoid 405 issues on protected endpoints, as requested.
@@ -19,7 +19,7 @@ export class SinergiaCRMCredentials implements ICredentialType {
 	displayName = 'SinergiaCRM API';
 
 	// External docs
-	documentationUrl = 'https://docs.suitecrm.com/developer/api/developer-setup-guide/json-api/';
+	documentationUrl = 'https://docs.SinergiaCRM.com/developer/api/developer-setup-guide/json-api/';
 
 	// Inherit n8n's built-in OAuth2 behavior
 	extends = ['oAuth2Api'];
@@ -41,7 +41,7 @@ export class SinergiaCRMCredentials implements ICredentialType {
 			type: 'string',
 			default: '',
 			required: true,
-			description: 'OAuth2 Client ID from SuiteCRM (Admin → OAuth2 Clients).',
+			description: 'OAuth2 Client ID from SinergiaCRM (Admin → OAuth2 Clients).',
 		},
 		{
 			displayName: 'Client Secret',
@@ -52,7 +52,7 @@ export class SinergiaCRMCredentials implements ICredentialType {
 			required: true,
 			description: 'OAuth2 Client Secret associated with the Client ID.',
 		},
-		// SuiteCRM does not require "scope" for client_credentials; leave it empty.
+		// SinergiaCRM does not require "scope" for client_credentials; leave it empty.
 	];
 
 	/**
@@ -74,7 +74,7 @@ export class SinergiaCRMCredentials implements ICredentialType {
 			clientAuthentication: 'body',          // ensure credentials go in the body
 			tokenRequestContentType: 'form',       // send as application/x-www-form-urlencoded
 			accessTokenUrl: '={{$credentials.domainUrl}}/Api/access_token',
-			// Some SuiteCRM installations require lowercase /api instead of /Api. If authentication fails, try adjusting accordingly.
+			// Some SinergiaCRM installations require lowercase /api instead of /Api. If authentication fails, try adjusting accordingly.
 		},
 	} as unknown as ICredentialType['authenticate'];
 

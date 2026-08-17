@@ -1,11 +1,11 @@
-// helpers/record.ts
+﻿// helpers/record.ts
 import type { IDataObject } from 'n8n-workflow';
-import type { SuiteCRMCreatePayload, SuiteCRMLinkRequest, SuiteCRMUpdatePayload } from './types';
+import type { SinergiaCRMCreatePayload, SinergiaCRMLinkRequest, SinergiaCRMUpdatePayload } from './types';
 
 /**
  * Builds the JSON:API request body for creating a record.
  */
-export function buildCreateBody(module: string, attributes: IDataObject): SuiteCRMCreatePayload {
+export function buildCreateBody(module: string, attributes: IDataObject): SinergiaCRMCreatePayload {
 	return {
 		data: {
 			type: module,
@@ -21,7 +21,7 @@ export function buildUpdateBody(
 	module: string,
 	id: string,
 	attributes: IDataObject,
-): SuiteCRMUpdatePayload {
+): SinergiaCRMUpdatePayload {
 	return {
 		data: {
 			type: module,
@@ -34,7 +34,7 @@ export function buildUpdateBody(
 /**
  * Builds the JSON:API request body for linking an existing related record.
  */
-export function buildLinkBody(relatedModule: string, relatedId: string): SuiteCRMLinkRequest {
+export function buildLinkBody(relatedModule: string, relatedId: string): SinergiaCRMLinkRequest {
 	return {
 		data: {
 			type: relatedModule,

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
 	IExecuteFunctions,
 	INodeExecutionData,
 	INodeType,
@@ -7,7 +7,8 @@ import type {
 import { NodeConnectionType } from 'n8n-workflow';
 import type { IDataObject, NodeApiError } from 'n8n-workflow';
 import type { FilterOptions } from './helpers/filters';
-import type { SuiteCRMListResponse, SuiteCRMRecordResponse } from './helpers/types';
+import { simplifyRecord } from './helpers/simplify';
+import type { SinergiaCRMListResponse, SinergiaCRMRecordResponse } from './helpers/types';
 
 import * as methods from './methods.loadOptions';
 import {
@@ -25,17 +26,17 @@ interface GetAllOptions {
 }
 
 /**
- * n8n node for interacting with any module of SinergiaCRM (SuiteCRM API).
+ * n8n node for interacting with any module of SinergiaCRM (SinergiaCRM API).
  * Supports CRUD operations, relationship fetching, pagination and filters.
  */
 export class SinergiaCRM implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SinergiaCRM',
-		name: 'sinergiaCrm',
-		icon: 'file:sinergiacrm.svg',
+		name: 'SinergiaCRM',
+		icon: 'file:SinergiaCRM.png',
 		group: ['transform'],
 		version: 1,
-		description: 'Create, update, read, link or unlink records in SinergiaCRM (SuiteCRM).',
+		description: 'Create, update, read, link or unlink records in SinergiaCRM.',
 		usableAsTool: true,
 		defaults: {
 			name: 'SinergiaCRM',
@@ -87,6 +88,13 @@ export class SinergiaCRM implements INodeType {
 					},
 				},
 			},
+			{
+				displayName: 'Simplify',
+				name: 'simplify',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to return a simplified version of the response instead of the raw data',
+			},
 		],
 	};
 
@@ -100,6 +108,7 @@ export class SinergiaCRM implements INodeType {
 
 		const moduleName = this.getNodeParameter('module', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
+		const simplify = this.getNodeParameter('simplify', 0, true) as boolean;
 
 		// Normalize credentials base URL (ensure no trailing slash)
 		const credentials = await this.getCredentials('SinergiaCRMCredentials');
@@ -135,7 +144,7 @@ export class SinergiaCRM implements INodeType {
 								qs,
 								json: true,
 							},
-						)) as SuiteCRMListResponse;
+						)) as SinergiaCRMListResponse;
 
 						const records = data.data || [];
 						collected.push(...records);
@@ -156,7 +165,7 @@ export class SinergiaCRM implements INodeType {
 
 					const sliced = returnAll ? collected : collected.slice(0, limit);
 					for (const record of sliced) {
-						returnData.push({ json: record });
+						returnData.push({ json: simplify ? simplifyRecord(record) : record });
 					}
 
 				// GET ONE record by ID
@@ -166,8 +175,9 @@ export class SinergiaCRM implements INodeType {
 						method: 'GET',
 						url: `${url}/${moduleName}/${id}`,
 						json: true,
-					})) as SuiteCRMRecordResponse;
-					returnData.push({ json: response.data ?? {} });
+					})) as SinergiaCRMRecordResponse;
+					const data = response.data ?? {};
+					returnData.push({ json: simplify ? simplifyRecord(data) : data });
 
 				// CREATE record
 				} else if (operation === 'create') {
@@ -197,7 +207,7 @@ export class SinergiaCRM implements INodeType {
 						url: `${url}/${moduleName}/${id}`,
 						json: true,
 					});
-					returnData.push({ json: { success: true, id } });
+					returnData.push({ json: { deleted: true, id } });
 
 				// GET RELATIONSHIPS of a record
 				} else if (operation === 'getRelationships') {
@@ -207,8 +217,9 @@ export class SinergiaCRM implements INodeType {
 						method: 'GET',
 						url: `${url}/${moduleName}/${id}/relationships/${relationship}`,
 						json: true,
-					})) as SuiteCRMRecordResponse;
-					returnData.push({ json: response.data ?? {} });
+					})) as SinergiaCRMRecordResponse;
+					const data = response.data ?? {};
+					returnData.push({ json: simplify ? simplifyRecord(data) : data });
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {

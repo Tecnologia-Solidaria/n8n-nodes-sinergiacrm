@@ -1,4 +1,4 @@
-// helpers/parse.ts
+﻿// helpers/parse.ts
 import type { IDataObject } from 'n8n-workflow';
 
 /**

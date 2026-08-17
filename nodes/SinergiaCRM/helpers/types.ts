@@ -1,35 +1,35 @@
-// helpers/types.ts
+﻿// helpers/types.ts
 import type { IDataObject } from 'n8n-workflow';
 
-export interface SuiteCRMListResponse {
+export interface SinergiaCRMListResponse {
 	data?: IDataObject[];
 }
 
-export interface SuiteCRMRecordResponse {
+export interface SinergiaCRMRecordResponse {
 	data?: IDataObject;
 }
 
-export interface SuiteCRMRelationshipResource {
+export interface SinergiaCRMRelationshipResource {
 	type: string;
 	id: string;
 }
 
-export interface SuiteCRMLinkRequest {
-	data: SuiteCRMRelationshipResource;
+export interface SinergiaCRMLinkRequest {
+	data: SinergiaCRMRelationshipResource;
 }
 
-export interface SuiteCRMLinkResponse {
-	data?: SuiteCRMRelationshipResource;
+export interface SinergiaCRMLinkResponse {
+	data?: SinergiaCRMRelationshipResource;
 }
 
-export interface SuiteCRMCreatePayload {
+export interface SinergiaCRMCreatePayload {
 	data: {
 		type: string;
 		attributes: IDataObject;
 	};
 }
 
-export interface SuiteCRMUpdatePayload {
+export interface SinergiaCRMUpdatePayload {
 	data: {
 		type: string;
 		id: string;

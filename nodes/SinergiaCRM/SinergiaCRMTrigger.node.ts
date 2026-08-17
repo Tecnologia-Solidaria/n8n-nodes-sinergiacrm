@@ -1,4 +1,4 @@
-// nodes/SinergiaCRM/SinergiaCRMTrigger.node.ts
+﻿// nodes/SinergiaCRM/SinergiaCRMTrigger.node.ts
 import type { INodeExecutionData, INodeType, INodeTypeDescription, IPollFunctions } from 'n8n-workflow';
 import { NodeConnectionType } from 'n8n-workflow';
 
@@ -6,17 +6,17 @@ import * as methods from './methods.loadOptions';
 import { poll as triggerPoll } from './operations/Trigger.operations';
 
 /**
- * n8n polling trigger for SinergiaCRM (SuiteCRM API).
+ * n8n polling trigger for SinergiaCRM (SinergiaCRM API).
  * Emits one item per created or updated record in the selected modules.
  */
 export class SinergiaCRMTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SinergiaCRM Trigger',
-		name: 'sinergiaCRMTrigger',
-		icon: 'file:sinergiacrm.svg',
+		name: 'SinergiaCRMTrigger',
+		icon: 'file:SinergiaCRM.png',
 		group: ['trigger'],
 		version: 1,
-		description: 'Polls SinergiaCRM (SuiteCRM API) for new or updated records.',
+		description: 'Polls SinergiaCRM (SinergiaCRM API) for new or updated records.',
 		defaults: {
 			name: 'SinergiaCRM Trigger',
 		},
@@ -48,7 +48,7 @@ export class SinergiaCRMTrigger implements INodeType {
 				default: ['created', 'updated'],
 				required: true,
 				description:
-					'Types of change to emit. Deleted records are not supported by the SuiteCRM JSON API.',
+					'Types of change to emit. Deleted records are not supported by the SinergiaCRM JSON API.',
 				options: [
 					{
 						name: 'Created',

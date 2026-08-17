@@ -1,4 +1,4 @@
-// test/SinergiaCRM.node.test.ts
+﻿// test/SinergiaCRM.node.test.ts
 import { describe, expect, it, vi } from 'vitest';
 import { NodeOperationError } from 'n8n-workflow';
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
@@ -31,12 +31,13 @@ function createExecuteContext(overrides: NodeContextOverrides = {}) {
 
 	const context = {
 		getInputData: vi.fn().mockReturnValue(items),
-		getNodeParameter: vi.fn().mockImplementation((name: string, index: number) => {
+		getNodeParameter: vi.fn().mockImplementation((name: string, index: number, defaultValue?: unknown) => {
 			const value = params[name];
-			return Array.isArray(value) ? value[index ?? 0] : value;
+			const resolved = Array.isArray(value) ? value[index ?? 0] : value;
+			return resolved !== undefined ? resolved : defaultValue;
 		}),
 		getCredentials: vi.fn().mockResolvedValue(credentials),
-		getNode: vi.fn().mockReturnValue({ name: 'SinergiaCRM', type: 'sinergiaCrm', typeVersion: 1 }),
+		getNode: vi.fn().mockReturnValue({ name: 'SinergiaCRM', type: 'SinergiaCRM', typeVersion: 1 }),
 		continueOnFail: vi.fn().mockReturnValue(overrides.continueOnFail ?? false),
 		helpers: {
 			requestWithAuthentication,
@@ -211,7 +212,7 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { success: true, id: 'acc-9' } }]);
+		expect(result).toEqual([{ json: { deleted: true, id: 'acc-9' } }]);
 		expect(requestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
@@ -598,6 +599,59 @@ describe('SinergiaCRM.execute', () => {
 
 		expect(result).toEqual([{ json: { success: true, alreadyUnlinked: true, id: 'c-1' } }]);
 		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+	});
+
+	it('simplify returns only common fields when enabled', async () => {
+		const { context, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'getOne',
+				id: 'c-1',
+				simplify: true,
+			},
+			responses: [{ data: { id: 'c-1', first_name: 'Ana', last_name: 'Perez', email1: 'ana@test.com', phone_work: '123', custom_field: 'ignored', another_custom: 42 } }],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result[0].json).toEqual({
+			id: 'c-1',
+			first_name: 'Ana',
+			last_name: 'Perez',
+			email1: 'ana@test.com',
+			phone_work: '123',
+		});
+	});
+
+	it('simplify returns raw data when disabled', async () => {
+		const { context, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'getOne',
+				id: 'c-1',
+				simplify: false,
+			},
+			responses: [{ data: { id: 'c-1', first_name: 'Ana', custom_field: 'kept' } }],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result[0].json).toEqual({ id: 'c-1', first_name: 'Ana', custom_field: 'kept' });
+	});
+
+	it('simplify defaults to true when not specified', async () => {
+		const { context, node } = createExecuteContext({
+			params: {
+				module: 'Contacts',
+				operation: 'getOne',
+				id: 'c-1',
+			},
+			responses: [{ data: { id: 'c-1', first_name: 'Ana', obscure_field: 'x' } }],
+		});
+
+		const [result] = await node.execute.call(context);
+
+		expect(result[0].json).toEqual({ id: 'c-1', first_name: 'Ana' });
 	});
 });
 
