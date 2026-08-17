@@ -6,7 +6,7 @@ describe('SinergiaCRMTrigger', () => {
 	it('expone un nodo de polling con la descripción correcta', () => {
 		const node = new SinergiaCRMTrigger();
 
-		expect(node.description.name).toBe('SinergiaCRMTrigger');
+		expect(node.description.name).toBe('sinergiacrmTrigger');
 		expect(node.description.displayName).toBe('SinergiaCRM Trigger');
 		expect(node.description.group).toEqual(['trigger']);
 		expect(node.description.inputs).toEqual([]);

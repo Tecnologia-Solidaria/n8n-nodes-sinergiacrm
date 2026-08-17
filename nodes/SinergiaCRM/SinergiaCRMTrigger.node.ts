@@ -12,8 +12,8 @@ import { poll as triggerPoll } from './operations/Trigger.operations';
 export class SinergiaCRMTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SinergiaCRM Trigger',
-		name: 'SinergiaCRMTrigger',
-		icon: 'file:SinergiaCRM.png',
+		name: 'sinergiacrmTrigger',
+		icon: 'file:sinergiacrm.svg',
 		group: ['trigger'],
 		version: 1,
 		description: 'Polls SinergiaCRM (SinergiaCRM API) for new or updated records.',

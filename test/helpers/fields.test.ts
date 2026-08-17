@@ -1,4 +1,4 @@
-// test/helpers/fields.test.ts
+﻿// test/helpers/fields.test.ts
 import { describe, expect, it } from 'vitest';
 import { buildAttributes, isEmptyValue, resolveFieldName } from '../../nodes/SinergiaCRM/helpers/fields';
 

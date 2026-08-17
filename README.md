@@ -137,6 +137,6 @@ MIT
 ---
 
 **Maintainer:** Javier Quilez Cabello / [tecnologiasolidaria.org](https://tecnologiasolidaria.org)  
-**Support:** [SinergiaCRM Forums](https://community.SinergiaCRM.com/)  
-**Source:** [GitHub](https://github.com/tecnologiasolidaria/n8n-nodes-SinergiaCRM)  
-**Docs:** [SinergiaCRM JSON API](https://docs.SinergiaCRM.com/developer/api/developer-setup-guide/json-api/)
+**Support:** [SinergiaCRM Forums](https://community.sinergiacrm.com/)  
+**Source:** [GitHub](https://github.com/tecnologiasolidaria/n8n-nodes-sinergiacrm)  
+**Docs:** [SinergiaCRM JSON API](https://docs.sinergiacrm.com/developer/api/developer-setup-guide/json-api/)

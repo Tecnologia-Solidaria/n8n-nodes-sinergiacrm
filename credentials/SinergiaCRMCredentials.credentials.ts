@@ -19,7 +19,7 @@ export class SinergiaCRMCredentials implements ICredentialType {
 	displayName = 'SinergiaCRM API';
 
 	// External docs
-	documentationUrl = 'https://docs.SinergiaCRM.com/developer/api/developer-setup-guide/json-api/';
+	documentationUrl = 'https://docs.sinergiacrm.com/developer/api/developer-setup-guide/json-api/';
 
 	// Inherit n8n's built-in OAuth2 behavior
 	extends = ['oAuth2Api'];

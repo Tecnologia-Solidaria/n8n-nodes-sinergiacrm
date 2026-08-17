@@ -1,4 +1,4 @@
-// test/helpers/filters.test.ts
+﻿// test/helpers/filters.test.ts
 import { describe, expect, it } from 'vitest';
 import { buildFilters, SUPPORTED_OPERATORS } from '../../nodes/SinergiaCRM/helpers/filters';
 
@@ -9,7 +9,7 @@ describe('buildFilters', () => {
 		expect(buildFilters({ Filter: [] })).toEqual({});
 	});
 
-	it('builds filters using the SuiteCRM operator keywords', () => {
+	it('builds filters using the SinergiaCRM operator keywords', () => {
 		const result = buildFilters({ Filter: [{ field: 'name', operator: 'eq', value: 'Juan' }] });
 		expect(result).toEqual({ 'filter[name][EQ]': 'Juan' });
 	});

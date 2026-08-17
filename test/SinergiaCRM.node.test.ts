@@ -37,7 +37,7 @@ function createExecuteContext(overrides: NodeContextOverrides = {}) {
 			return resolved !== undefined ? resolved : defaultValue;
 		}),
 		getCredentials: vi.fn().mockResolvedValue(credentials),
-		getNode: vi.fn().mockReturnValue({ name: 'SinergiaCRM', type: 'SinergiaCRM', typeVersion: 1 }),
+		getNode: vi.fn().mockReturnValue({ name: 'SinergiaCRM', type: 'sinergiacrm', typeVersion: 1 }),
 		continueOnFail: vi.fn().mockReturnValue(overrides.continueOnFail ?? false),
 		helpers: {
 			requestWithAuthentication,

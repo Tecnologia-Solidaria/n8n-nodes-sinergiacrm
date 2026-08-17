@@ -32,8 +32,8 @@ interface GetAllOptions {
 export class SinergiaCRM implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SinergiaCRM',
-		name: 'SinergiaCRM',
-		icon: 'file:SinergiaCRM.png',
+		name: 'sinergiacrm',
+		icon: 'file:sinergiacrm.svg',
 		group: ['transform'],
 		version: 1,
 		description: 'Create, update, read, link or unlink records in SinergiaCRM.',

@@ -1,4 +1,4 @@
-// test/helpers/parse.test.ts
+﻿// test/helpers/parse.test.ts
 import { describe, expect, it } from 'vitest';
 import { parseJsonInput } from '../../nodes/SinergiaCRM/helpers/parse';
 

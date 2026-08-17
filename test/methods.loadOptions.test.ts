@@ -1,4 +1,4 @@
-// test/methods.loadOptions.test.ts
+﻿// test/methods.loadOptions.test.ts
 import { describe, expect, it, vi } from 'vitest';
 import type { ILoadOptionsFunctions } from 'n8n-workflow';
 import {

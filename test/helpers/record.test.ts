@@ -1,4 +1,4 @@
-// test/helpers/record.test.ts
+﻿// test/helpers/record.test.ts
 import { describe, expect, it } from 'vitest';
 import { buildCreateBody, buildUpdateBody } from '../../nodes/SinergiaCRM/helpers/record';
 

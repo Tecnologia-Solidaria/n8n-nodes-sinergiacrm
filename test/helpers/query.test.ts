@@ -1,4 +1,4 @@
-// test/helpers/query.test.ts
+﻿// test/helpers/query.test.ts
 import { describe, expect, it } from 'vitest';
 import {
 	buildListQuery,

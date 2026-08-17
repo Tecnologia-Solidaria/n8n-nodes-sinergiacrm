@@ -1,4 +1,4 @@
-// test/Trigger.operations.test.ts
+﻿// test/Trigger.operations.test.ts
 import { describe, expect, it, vi } from 'vitest';
 import type { IDataObject, IPollFunctions } from 'n8n-workflow';
 import {
