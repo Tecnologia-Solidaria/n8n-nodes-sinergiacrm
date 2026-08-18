@@ -30,7 +30,7 @@ interface GetAllOptions {
  * n8n node for interacting with any module of SinergiaCRM (SinergiaCRM API).
  * Supports CRUD operations, relationship fetching, pagination and filters.
  */
-export class SinergiaCRM implements INodeType {
+export class Sinergiacrm implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SinergiaCRM',
 		name: 'sinergiacrm',

@@ -9,7 +9,7 @@ import { poll as triggerPoll } from './operations/Trigger.operations';
  * n8n polling trigger for SinergiaCRM (SinergiaCRM API).
  * Emits one item per created or updated record in the selected modules.
  */
-export class SinergiaCRMTrigger implements INodeType {
+export class SinergiacrmTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SinergiaCRM Trigger',
 		name: 'sinergiacrmTrigger',

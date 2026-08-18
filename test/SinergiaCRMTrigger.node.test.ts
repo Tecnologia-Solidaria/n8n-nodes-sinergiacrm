@@ -1,10 +1,10 @@
-﻿// test/SinergiaCRMTrigger.node.test.ts
+﻿// test/SinergiacrmTrigger.node.test.ts
 import { describe, expect, it } from 'vitest';
-import { SinergiaCRMTrigger } from '../nodes/SinergiaCRM/SinergiacrmTrigger.node';
+import { SinergiacrmTrigger } from '../nodes/SinergiaCRM/SinergiacrmTrigger.node';
 
-describe('SinergiaCRMTrigger', () => {
+describe('SinergiacrmTrigger', () => {
 	it('expone un nodo de polling con la descripción correcta', () => {
-		const node = new SinergiaCRMTrigger();
+		const node = new SinergiacrmTrigger();
 
 		expect(node.description.name).toBe('sinergiacrmTrigger');
 		expect(node.description.displayName).toBe('SinergiaCRM Trigger');
@@ -15,7 +15,7 @@ describe('SinergiaCRMTrigger', () => {
 	});
 
 	it('define la credencial SinergiaCRMCredentials como obligatoria', () => {
-		const node = new SinergiaCRMTrigger();
+		const node = new SinergiacrmTrigger();
 
 		expect(node.description.credentials).toEqual([
 			{
@@ -26,7 +26,7 @@ describe('SinergiaCRMTrigger', () => {
 	});
 
 	it('incluye los parámetros de módulos, eventos y cadencia', () => {
-		const node = new SinergiaCRMTrigger();
+		const node = new SinergiacrmTrigger();
 		const names = node.description.properties.map((property) => property.name);
 
 		expect(names).toEqual(
@@ -39,20 +39,20 @@ describe('SinergiaCRMTrigger', () => {
 	});
 
 	it('mantiene eventos limitados a created y updated', () => {
-		const node = new SinergiaCRMTrigger();
+		const node = new SinergiacrmTrigger();
 		const events = node.description.properties.find((property) => property.name === 'events');
 
 		expect(events?.default).toEqual(['created', 'updated']);
 	});
 
 	it('delega el poll a las operaciones del trigger', async () => {
-		const node = new SinergiaCRMTrigger();
+		const node = new SinergiacrmTrigger();
 		expect(node.poll).toBeDefined();
 		expect(node.methods?.loadOptions).toBeDefined();
 	});
 
 	it('no es usable como herramienta (solo el nodo principal lo es)', () => {
-		const node = new SinergiaCRMTrigger();
+		const node = new SinergiacrmTrigger();
 		expect(node.description.usableAsTool).toBeUndefined();
 	});
 });

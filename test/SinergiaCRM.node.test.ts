@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NodeApiError } from 'n8n-workflow';
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { SinergiaCRM } from '../nodes/SinergiaCRM/Sinergiacrm.node';
+import { Sinergiacrm } from '../nodes/SinergiaCRM/Sinergiacrm.node';
 
 interface NodeContextOverrides {
 	items?: INodeExecutionData[];
@@ -44,7 +44,7 @@ function createExecuteContext(overrides: NodeContextOverrides = {}) {
 		},
 	} as unknown as IExecuteFunctions;
 
-	return { context, httpRequestWithAuthentication, node: new SinergiaCRM() };
+	return { context, httpRequestWithAuthentication, node: new Sinergiacrm() };
 }
 
 describe('SinergiaCRM.execute', () => {
@@ -657,12 +657,12 @@ describe('SinergiaCRM.execute', () => {
 
 describe('SinergiaCRM — herramienta de agentes (US5)', () => {
 	it('expone el nodo principal como usable como herramienta', () => {
-		const node = new SinergiaCRM();
+		const node = new Sinergiacrm();
 		expect(node.description.usableAsTool).toBe(true);
 	});
 
 	it('ofrece una descripción de herramienta en inglés y no vacía', () => {
-		const node = new SinergiaCRM();
+		const node = new Sinergiacrm();
 		expect(node.description.description.length).toBeGreaterThan(0);
 		expect(node.description.description).toMatch(/^[a-zA-Z0-9 ,.:()'/-]+$/);
 	});
