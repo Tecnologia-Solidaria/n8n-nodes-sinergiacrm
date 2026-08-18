@@ -117,12 +117,37 @@ Because the node is `usableAsTool`, n8n's **MCP Server** trigger exposes it auto
 
 ## Troubleshooting
 
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues including:
+### "The specified package could not be loaded" after upgrading
 
-- "The specified package could not be loaded" after upgrading (stale cache)
-- Node not appearing as an AI Agent tool
-- Authentication errors
-- n8n 2.x compatibility
+n8n caches loaded node classes. When upgrading from v2.2.5 or earlier, clear the cache and reinstall:
+
+**Docker:**
+```bash
+docker exec -it <container> sh -c "rm -rf /home/node/.n8n/nodes/node_modules/* /home/node/.n8n/nodes/package.json"
+docker restart <container>
+```
+
+**npm / local:**
+```bash
+rm -rf ~/.n8n/nodes/node_modules/*
+rm -f ~/.n8n/nodes/package.json
+```
+
+Then reinstall from **Settings → Community Nodes**.
+
+### Node does not appear as an AI Agent tool
+
+Add this environment variable to your n8n instance:
+```bash
+N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+```
+
+### Other issues
+
+- `access_token` missing → Check credentials or OAuth2 setup
+- `405 Method Not Allowed` → PATCH may not be enabled in your SinergiaCRM
+- After upgrading n8n itself, community nodes may need to be reinstalled
+- Check `docker logs <container>` for detailed error messages
 
 ---
 
