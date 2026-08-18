@@ -17,7 +17,7 @@ interface TriggerContextOverrides {
 
 function createPollContext(overrides: TriggerContextOverrides = {}) {
 	const responses = [...(overrides.responses ?? [])];
-	const requestWithAuthentication = vi.fn().mockImplementation(() => {
+	const httpRequestWithAuthentication = vi.fn().mockImplementation(() => {
 		if (responses.length === 0) {
 			return Promise.reject(new Error('Unexpected request'));
 		}
@@ -35,11 +35,11 @@ function createPollContext(overrides: TriggerContextOverrides = {}) {
 		getWorkflowStaticData: vi.fn().mockReturnValue(staticData),
 		getMode: vi.fn().mockReturnValue(overrides.mode ?? 'trigger'),
 		helpers: {
-			requestWithAuthentication,
+			httpRequestWithAuthentication,
 		},
 	} as unknown as IPollFunctions;
 
-	return { context, requestWithAuthentication, staticData };
+	return { context, httpRequestWithAuthentication, staticData };
 }
 
 function makeRecord(id: string, modified: string, entered = modified) {
@@ -76,7 +76,7 @@ describe('Trigger.operations — classifyEvent (T019)', () => {
 describe('Trigger.operations — invariantes del cursor (T020)', () => {
 	it('en error transitorio de API el poll falla y el cursor NO avanza', async () => {
 		const staticData: IDataObject = { cursors: { Accounts: '2024-05-01T09:00:00' } };
-		const { context, requestWithAuthentication } = createPollContext({
+		const { context, httpRequestWithAuthentication } = createPollContext({
 			params: DEFAULT_PARAMS,
 			staticData,
 			responses: [new Error('boom')],
@@ -86,7 +86,7 @@ describe('Trigger.operations — invariantes del cursor (T020)', () => {
 
 		expect(staticData.cursors).toEqual({ Accounts: '2024-05-01T09:00:00' });
 		expect(staticData.lastRun).toBeUndefined();
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
 	});
 
 	it('en truncamiento por límite de páginas el cursor NO avanza y no emite nada', async () => {
@@ -94,7 +94,7 @@ describe('Trigger.operations — invariantes del cursor (T020)', () => {
 		const fullPages = Array.from({ length: 10 }, () => ({
 			data: Array.from({ length: 50 }, (_, i) => makeRecord(`acc-${i}`, '2024-05-02T00:00:00')),
 		}));
-		const { context, requestWithAuthentication } = createPollContext({
+		const { context, httpRequestWithAuthentication } = createPollContext({
 			params: DEFAULT_PARAMS,
 			staticData,
 			responses: fullPages,
@@ -104,7 +104,7 @@ describe('Trigger.operations — invariantes del cursor (T020)', () => {
 
 		expect(result).toBeNull();
 		expect(staticData.cursors).toEqual({ Accounts: '2024-05-01T09:00:00' });
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(10);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(10);
 	});
 
 	it('tras un ventanal completo el cursor avanza al registro más antiguo procesado y emite', async () => {
@@ -116,7 +116,7 @@ describe('Trigger.operations — invariantes del cursor (T020)', () => {
 			makeRecord('b-0', '2024-05-02T11:00:00', '2024-04-30T08:00:00'),
 			makeRecord('b-1', '2024-05-02T10:00:00', '2024-04-30T08:00:00'),
 		];
-		const { context, requestWithAuthentication } = createPollContext({
+		const { context, httpRequestWithAuthentication } = createPollContext({
 			params: DEFAULT_PARAMS,
 			staticData,
 			responses: [{ data: page1 }, { data: page2 }],
@@ -133,7 +133,7 @@ describe('Trigger.operations — invariantes del cursor (T020)', () => {
 			date_entered: '2024-04-30T08:00:00',
 		});
 		expect(staticData.cursors).toEqual({ Accounts: '2024-05-02T12:00:00' });
-		expect(requestWithAuthentication.mock.calls[0][1]).toMatchObject({
+		expect(httpRequestWithAuthentication.mock.calls[0][1]).toMatchObject({
 			url: 'https://crm.example.com/Api/V8/module/Accounts',
 			qs: {
 				'filter[date_modified][GTE]': '2024-05-01T09:00:00',
@@ -142,7 +142,7 @@ describe('Trigger.operations — invariantes del cursor (T020)', () => {
 				'page[number]': 1,
 			},
 		});
-		expect(requestWithAuthentication.mock.calls[1][1].qs).toMatchObject({ 'page[number]': 2 });
+		expect(httpRequestWithAuthentication.mock.calls[1][1].qs).toMatchObject({ 'page[number]': 2 });
 	});
 
 	it('filtra por events: solo emite los tipos seleccionados', async () => {
@@ -296,7 +296,7 @@ describe('Trigger.operations — checkInterval y poll sin novedades (T021)', () 
 			cursors: { Accounts: '2024-05-01T09:00:00' },
 			lastRun: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
 		};
-		const { context, requestWithAuthentication } = createPollContext({
+		const { context, httpRequestWithAuthentication } = createPollContext({
 			params: { checkInterval: 'hours', numberHours: 1, module: ['Accounts'], events: ['created'] },
 			staticData,
 			responses: [],
@@ -305,12 +305,12 @@ describe('Trigger.operations — checkInterval y poll sin novedades (T021)', () 
 		const result = await poll.call(context);
 
 		expect(result).toBeNull();
-		expect(requestWithAuthentication).not.toHaveBeenCalled();
+		expect(httpRequestWithAuthentication).not.toHaveBeenCalled();
 	});
 
 	it('poll sin novedades devuelve null sin ejecuciones vacías', async () => {
 		const staticData: IDataObject = { cursors: { Accounts: '2024-05-01T09:00:00' } };
-		const { context, requestWithAuthentication } = createPollContext({
+		const { context, httpRequestWithAuthentication } = createPollContext({
 			params: DEFAULT_PARAMS,
 			staticData,
 			responses: [{ data: [] }],
@@ -319,13 +319,13 @@ describe('Trigger.operations — checkInterval y poll sin novedades (T021)', () 
 		const result = await poll.call(context);
 
 		expect(result).toBeNull();
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
 		expect(staticData.cursors).toEqual({ Accounts: '2024-05-01T09:00:00' });
 		expect(staticData.lastRun).toBeDefined();
 	});
 
 	it('primer poll siembra el cursor con max(date_modified) sin emitir nada', async () => {
-		const { context, requestWithAuthentication } = createPollContext({
+		const { context, httpRequestWithAuthentication } = createPollContext({
 			params: DEFAULT_PARAMS,
 			staticData: {},
 			responses: [{ data: [makeRecord('a-1', '2024-05-02T10:00:00', '2024-05-02T10:00:00')] }],
@@ -335,7 +335,7 @@ describe('Trigger.operations — checkInterval y poll sin novedades (T021)', () 
 		const staticData = context.getWorkflowStaticData('node');
 
 		expect(result).toBeNull();
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
 		expect(staticData.cursors).toEqual({ Accounts: '2024-05-02T10:00:00' });
 	});
 });
@@ -343,7 +343,7 @@ describe('Trigger.operations — checkInterval y poll sin novedades (T021)', () 
 describe('Trigger.operations — ejecución manual (sample)', () => {
 	it('en modo manual devuelve los últimos registros sin tocar el staticData', async () => {
 		const staticData: IDataObject = { cursors: { Accounts: '2024-05-01T09:00:00' } };
-		const { context, requestWithAuthentication } = createPollContext({
+		const { context, httpRequestWithAuthentication } = createPollContext({
 			mode: 'manual',
 			params: DEFAULT_PARAMS,
 			staticData,
@@ -368,8 +368,8 @@ describe('Trigger.operations — ejecución manual (sample)', () => {
 			name: 'Account sample-1',
 		});
 		expect(staticData).toEqual({ cursors: { Accounts: '2024-05-01T09:00:00' } });
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
-		const [, requestOptions] = requestWithAuthentication.mock.calls[0] as [string, { qs: object }];
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
+		const [, requestOptions] = httpRequestWithAuthentication.mock.calls[0] as [string, { qs: object }];
 		expect(requestOptions.qs).toEqual({
 			sort: '-date_modified',
 			'page[size]': 10,

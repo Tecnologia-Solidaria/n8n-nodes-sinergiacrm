@@ -1,12 +1,12 @@
 {
-  "node": "n8n-nodes-suitecrm-community.SuiteCRM",
-  "nodeVersion": 1,
+  "node": "n8n-nodes-sinergiacrm.sinergiacrm",
+  "nodeVersion": "1.0",
   "codexVersion": "1.0",
   "categories": [
-    "CRM"
+    "Sales"
   ],
   "resources": {
-    "documentation": "https://github.com/tecnologiasolidaria/n8n-nodes-suitecrm#readme",
-    "icon": "suitecrm.png"
+    "documentation": "https://github.com/Tecnologia-Solidaria/n8n-nodes-sinergiacrm#readme",
+    "icon": "sinergiacrm.svg"
   }
 }

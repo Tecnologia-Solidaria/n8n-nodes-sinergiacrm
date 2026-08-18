@@ -196,7 +196,7 @@ interface WindowResult {
 }
 
 async function seedCursor(this: IPollFunctions, url: string, moduleName: string): Promise<string> {
-	const response = (await this.helpers.requestWithAuthentication.call(
+	const response = (await this.helpers.httpRequestWithAuthentication.call(
 		this,
 		'SinergiaCRMCredentials',
 		{
@@ -230,7 +230,7 @@ async function fetchWindow(
 	const collected: IDataObject[] = [];
 
 	for (let page = 1; page <= TRIGGER_MAX_PAGES; page++) {
-		const response = (await this.helpers.requestWithAuthentication.call(
+		const response = (await this.helpers.httpRequestWithAuthentication.call(
 			this,
 			'SinergiaCRMCredentials',
 			{
@@ -278,6 +278,7 @@ function buildOutputItem(
 			date_modified: dateModified,
 			...attributes,
 		},
+		pairedItem: { item: 0 },
 	};
 }
 
@@ -303,7 +304,7 @@ async function pollSample(
 	const sample: INodeExecutionData[] = [];
 
 	for (const moduleName of modules) {
-		const response = (await this.helpers.requestWithAuthentication.call(
+		const response = (await this.helpers.httpRequestWithAuthentication.call(
 			this,
 			'SinergiaCRMCredentials',
 			{
@@ -334,7 +335,7 @@ async function pollSample(
 				continue;
 			}
 
-			sample.push(buildOutputItem(moduleName, event, record, id, dateEntered, dateModified));
+			sample.push({ ...buildOutputItem(moduleName, event, record, id, dateEntered, dateModified), pairedItem: { item: sample.length } });
 		}
 	}
 

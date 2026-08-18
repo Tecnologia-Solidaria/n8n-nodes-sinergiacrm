@@ -18,22 +18,22 @@ function createContext(overrides: ContextOverrides = {}) {
 	const params = overrides.params ?? {};
 	const response = overrides.response ?? { data: {} };
 
-	const requestWithAuthentication = vi.fn().mockResolvedValue(response);
+	const httpRequestWithAuthentication = vi.fn().mockResolvedValue(response);
 
 	const context = {
 		getCredentials: vi.fn().mockResolvedValue(credentials),
 		getCurrentNodeParameter: vi.fn().mockImplementation((name: string) => params[name]),
 		helpers: {
-			requestWithAuthentication,
+			httpRequestWithAuthentication,
 		},
 	} as unknown as ILoadOptionsFunctions;
 
-	return { context, requestWithAuthentication };
+	return { context, httpRequestWithAuthentication };
 }
 
 describe('getModules', () => {
 	it('returns module options mapped from the API attributes', async () => {
-		const { context, requestWithAuthentication } = createContext({
+		const { context, httpRequestWithAuthentication } = createContext({
 			response: {
 				data: {
 					attributes: {
@@ -50,7 +50,7 @@ describe('getModules', () => {
 			{ name: 'Accounts', value: 'Accounts' },
 			{ name: 'Contacts', value: 'Contacts' },
 		]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'GET',
@@ -61,13 +61,13 @@ describe('getModules', () => {
 	});
 
 	it('strips a trailing slash from the configured domain URL', async () => {
-		const { context, requestWithAuthentication } = createContext({
+		const { context, httpRequestWithAuthentication } = createContext({
 			credentials: { domainUrl: 'https://crm.example.com/' },
 		});
 
 		await getModules.call(context);
 
-		const [, requestOptions] = requestWithAuthentication.mock.calls[0] as [string, { url: string }];
+		const [, requestOptions] = httpRequestWithAuthentication.mock.calls[0] as [string, { url: string }];
 		expect(requestOptions.url).toBe('https://crm.example.com/Api/V8/meta/modules');
 	});
 });
@@ -122,7 +122,7 @@ describe('getAvailableRelationships', () => {
 	});
 
 	it('reads the recordId parameter used by Link Record (bug relationship dropdown vacío)', async () => {
-		const { context, requestWithAuthentication } = createContext({
+		const { context, httpRequestWithAuthentication } = createContext({
 			params: { module: 'Accounts', recordId: 'acc-2' },
 			response: { data: { relationships } },
 		});
@@ -130,7 +130,7 @@ describe('getAvailableRelationships', () => {
 		const result = await getAvailableRelationships.call(context);
 
 		expect(result).toEqual([{ name: 'contacts', value: 'rel-123' }]);
-		const [, requestOptions] = requestWithAuthentication.mock.calls[0] as [
+		const [, requestOptions] = httpRequestWithAuthentication.mock.calls[0] as [
 			string,
 			{ url: string },
 		];

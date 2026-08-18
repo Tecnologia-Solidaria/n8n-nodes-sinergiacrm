@@ -1,8 +1,8 @@
 ﻿// test/SinergiaCRM.node.test.ts
 import { describe, expect, it, vi } from 'vitest';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { SinergiaCRM } from '../nodes/SinergiaCRM/SinergiaCRM.node';
+import { SinergiaCRM } from '../nodes/SinergiaCRM/Sinergiacrm.node';
 
 interface NodeContextOverrides {
 	items?: INodeExecutionData[];
@@ -18,7 +18,7 @@ function createExecuteContext(overrides: NodeContextOverrides = {}) {
 	const credentials = overrides.credentials ?? { domainUrl: 'https://crm.example.com/' };
 	const responses = [...(overrides.responses ?? [{ data: {} }])];
 
-	const requestWithAuthentication = vi.fn().mockImplementation(() => {
+	const httpRequestWithAuthentication = vi.fn().mockImplementation(() => {
 		if (responses.length === 0) {
 			return Promise.reject(new Error('Unexpected request'));
 		}
@@ -40,16 +40,16 @@ function createExecuteContext(overrides: NodeContextOverrides = {}) {
 		getNode: vi.fn().mockReturnValue({ name: 'SinergiaCRM', type: 'sinergiacrm', typeVersion: 1 }),
 		continueOnFail: vi.fn().mockReturnValue(overrides.continueOnFail ?? false),
 		helpers: {
-			requestWithAuthentication,
+			httpRequestWithAuthentication,
 		},
 	} as unknown as IExecuteFunctions;
 
-	return { context, requestWithAuthentication, node: new SinergiaCRM() };
+	return { context, httpRequestWithAuthentication, node: new SinergiaCRM() };
 }
 
 describe('SinergiaCRM.execute', () => {
 	it('getAll returns only the requested page when returnAll is disabled', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'getAll',
@@ -62,9 +62,9 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { id: '1' } }, { json: { id: '2' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
-		expect(requestWithAuthentication.mock.calls[0][1]).toEqual(
+		expect(result).toEqual([{ json: { id: '1' }, pairedItem: { item: 0 } }, { json: { id: '2' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
+		expect(httpRequestWithAuthentication.mock.calls[0][1]).toEqual(
 			expect.objectContaining({
 				method: 'GET',
 				url: 'https://crm.example.com/Api/V8/module/Accounts',
@@ -75,7 +75,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('getAll paginates until the last page when returnAll is enabled', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'getAll',
@@ -89,21 +89,21 @@ describe('SinergiaCRM.execute', () => {
 		const [result] = await node.execute.call(context);
 
 		expect(result).toEqual([
-			{ json: { id: '1' } },
-			{ json: { id: '2' } },
-			{ json: { id: '3' } },
+			{ json: { id: '1' }, pairedItem: { item: 0 } },
+			{ json: { id: '2' }, pairedItem: { item: 0 } },
+			{ json: { id: '3' }, pairedItem: { item: 0 } },
 		]);
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(2);
-		expect(requestWithAuthentication.mock.calls[0][1]).toEqual(
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(2);
+		expect(httpRequestWithAuthentication.mock.calls[0][1]).toEqual(
 			expect.objectContaining({ qs: { 'page[size]': 2, 'page[number]': 1 } }),
 		);
-		expect(requestWithAuthentication.mock.calls[1][1]).toEqual(
+		expect(httpRequestWithAuthentication.mock.calls[1][1]).toEqual(
 			expect.objectContaining({ qs: { 'page[size]': 2, 'page[number]': 2 } }),
 		);
 	});
 
 	it('getAll applies the configured filters to the query', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'getAll',
@@ -118,7 +118,7 @@ describe('SinergiaCRM.execute', () => {
 
 		await node.execute.call(context);
 
-		expect(requestWithAuthentication.mock.calls[0][1]).toEqual(
+		expect(httpRequestWithAuthentication.mock.calls[0][1]).toEqual(
 			expect.objectContaining({
 				qs: { 'page[size]': 5, 'page[number]': 1, 'filter[name][EQ]': 'ACME' },
 			}),
@@ -126,15 +126,15 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('getOne fetches a single record', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: { module: 'Accounts', operation: 'getOne', id: 'acc-1' },
 			responses: [{ data: { id: 'acc-1', name: 'ACME' } }],
 		});
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { id: 'acc-1', name: 'ACME' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(result).toEqual([{ json: { id: 'acc-1', name: 'ACME' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'GET',
@@ -145,7 +145,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('create sends a POST with the JSON:API body', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'create',
@@ -156,8 +156,8 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { id: 'c-1', type: 'Contacts' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(result).toEqual([{ json: { id: 'c-1', type: 'Contacts' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'POST',
@@ -174,7 +174,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('update sends a PATCH with the record id in the body', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'update',
@@ -186,8 +186,8 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { id: 'c-1' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(result).toEqual([{ json: { id: 'c-1' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'PATCH',
@@ -205,15 +205,15 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('delete removes the record and reports success', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: { module: 'Accounts', operation: 'delete', id: 'acc-9' },
 			responses: [{ data: {} }],
 		});
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { deleted: true, id: 'acc-9' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(result).toEqual([{ json: { deleted: true, id: 'acc-9' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'DELETE',
@@ -224,7 +224,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('getRelationships fetches the related records', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'getRelationships',
@@ -236,8 +236,8 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: [{ id: 'c-1' }] }]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(result).toEqual([{ json: [{ id: 'c-1' }], pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'GET',
@@ -284,7 +284,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('processes one item per input execution item', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			items: [{ json: {} }, { json: {} }],
 			params: {
 				module: 'Accounts',
@@ -299,11 +299,11 @@ describe('SinergiaCRM.execute', () => {
 		expect(result).toHaveLength(2);
 		expect(result[0].json).toEqual({ id: 'acc-1' });
 		expect(result[1].json).toEqual({ id: 'acc-2' });
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(2);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(2);
 	});
 
 	it('create sends the attributes built from fields mode', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'create',
@@ -320,8 +320,8 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { id: 'c-1' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(result).toEqual([{ json: { id: 'c-1' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'POST',
@@ -338,7 +338,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('create resolves custom fields to their technical name in fields mode', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'create',
@@ -352,7 +352,7 @@ describe('SinergiaCRM.execute', () => {
 
 		await node.execute.call(context);
 
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				body: {
@@ -366,7 +366,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('update sends only the attributes built from fields mode', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'update',
@@ -379,7 +379,7 @@ describe('SinergiaCRM.execute', () => {
 
 		await node.execute.call(context);
 
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'PATCH',
@@ -397,7 +397,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('create in rawJson mode accepts a JSON string', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'create',
@@ -409,7 +409,7 @@ describe('SinergiaCRM.execute', () => {
 
 		await node.execute.call(context);
 
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				body: {
@@ -423,7 +423,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('rejects invalid raw JSON and does not execute the operation', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'create',
@@ -432,12 +432,12 @@ describe('SinergiaCRM.execute', () => {
 			},
 		});
 
-		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
-		expect(requestWithAuthentication).not.toHaveBeenCalled();
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeApiError);
+		expect(httpRequestWithAuthentication).not.toHaveBeenCalled();
 	});
 
 	it('rejects create with an empty fields list and does not execute the operation', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'create',
@@ -446,12 +446,12 @@ describe('SinergiaCRM.execute', () => {
 			},
 		});
 
-		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
-		expect(requestWithAuthentication).not.toHaveBeenCalled();
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeApiError);
+		expect(httpRequestWithAuthentication).not.toHaveBeenCalled();
 	});
 
 	it('rejects fields mode with an empty value', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'create',
@@ -460,12 +460,12 @@ describe('SinergiaCRM.execute', () => {
 			},
 		});
 
-		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
-		expect(requestWithAuthentication).not.toHaveBeenCalled();
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeApiError);
+		expect(httpRequestWithAuthentication).not.toHaveBeenCalled();
 	});
 
 	it('linkRecord links an existing related record', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'linkRecord',
@@ -479,8 +479,8 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { id: 'c-1', type: 'Contacts' } }]);
-		expect(requestWithAuthentication).toHaveBeenNthCalledWith(
+		expect(result).toEqual([{ json: { id: 'c-1', type: 'Contacts' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenNthCalledWith(
 			1,
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
@@ -489,7 +489,7 @@ describe('SinergiaCRM.execute', () => {
 				json: true,
 			}),
 		);
-		expect(requestWithAuthentication).toHaveBeenNthCalledWith(
+		expect(httpRequestWithAuthentication).toHaveBeenNthCalledWith(
 			2,
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
@@ -502,7 +502,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('linkRecord rejects a non-existent related record without modifying data', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'linkRecord',
@@ -516,13 +516,13 @@ describe('SinergiaCRM.execute', () => {
 
 		const error = await node.execute.call(context).catch((e: unknown) => e);
 
-		expect(error).toBeInstanceOf(NodeOperationError);
+		expect(error).toBeInstanceOf(NodeApiError);
 		expect((error as Error).message).toContain('missing');
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(2);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(2);
 	});
 
 	it('linkRecord is idempotent when the relationship already exists', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'linkRecord',
@@ -537,13 +537,13 @@ describe('SinergiaCRM.execute', () => {
 		const [result] = await node.execute.call(context);
 
 		expect(result).toEqual([
-			{ json: { success: true, alreadyLinked: true, id: 'c-1', type: 'Contacts' } },
+			{ json: { success: true, alreadyLinked: true, id: 'c-1', type: 'Contacts' }, pairedItem: { item: 0 } },
 		]);
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
 	});
 
 	it('linkRecord rejects linking a record to itself', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Contacts',
 				operation: 'linkRecord',
@@ -554,12 +554,12 @@ describe('SinergiaCRM.execute', () => {
 			},
 		});
 
-		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeOperationError);
-		expect(requestWithAuthentication).not.toHaveBeenCalled();
+		await expect(node.execute.call(context)).rejects.toBeInstanceOf(NodeApiError);
+		expect(httpRequestWithAuthentication).not.toHaveBeenCalled();
 	});
 
 	it('unlinkRecord unlinks a record via DELETE', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'unlinkRecord',
@@ -572,8 +572,8 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { success: true, id: 'c-1' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledWith(
+		expect(result).toEqual([{ json: { success: true, id: 'c-1' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledWith(
 			'SinergiaCRMCredentials',
 			expect.objectContaining({
 				method: 'DELETE',
@@ -584,7 +584,7 @@ describe('SinergiaCRM.execute', () => {
 	});
 
 	it('unlinkRecord reports clearly when the relationship does not exist', async () => {
-		const { context, requestWithAuthentication, node } = createExecuteContext({
+		const { context, httpRequestWithAuthentication, node } = createExecuteContext({
 			params: {
 				module: 'Accounts',
 				operation: 'unlinkRecord',
@@ -597,8 +597,8 @@ describe('SinergiaCRM.execute', () => {
 
 		const [result] = await node.execute.call(context);
 
-		expect(result).toEqual([{ json: { success: true, alreadyUnlinked: true, id: 'c-1' } }]);
-		expect(requestWithAuthentication).toHaveBeenCalledTimes(1);
+		expect(result).toEqual([{ json: { success: true, alreadyUnlinked: true, id: 'c-1' }, pairedItem: { item: 0 } }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
 	});
 
 	it('simplify returns only common fields when enabled', async () => {

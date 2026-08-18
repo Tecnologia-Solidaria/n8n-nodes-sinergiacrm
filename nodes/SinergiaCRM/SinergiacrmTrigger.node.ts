@@ -16,6 +16,7 @@ export class SinergiaCRMTrigger implements INodeType {
 		icon: 'file:sinergiacrm.svg',
 		group: ['trigger'],
 		version: 1,
+		subtitle: 'SinergiaCRM',
 		description: 'Polls SinergiaCRM (SinergiaCRM API) for new or updated records.',
 		defaults: {
 			name: 'SinergiaCRM Trigger',

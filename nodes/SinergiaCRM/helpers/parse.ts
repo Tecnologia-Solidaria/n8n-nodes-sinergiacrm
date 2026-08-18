@@ -5,20 +5,21 @@ import type { IDataObject } from 'n8n-workflow';
  * Safely parses a string or object input into a valid JSON object.
  * Used for user-supplied input in operations like "create" or "update".
  *
+ * Returns undefined if the input is invalid (caller handles error presentation).
+ *
  * @param input - Input value from the node parameter (string or object)
- * @returns Parsed object
- * @throws If the input is not a valid JSON object or string
+ * @returns Parsed object, or undefined if invalid
  */
-export function parseJsonInput(input: unknown): IDataObject {
+export function parseJsonInput(input: unknown): IDataObject | undefined {
 	if (typeof input === 'string') {
 		try {
 			return JSON.parse(input);
 		} catch {
-			throw new Error('SinergiaCRM: The "Data" field must be a valid JSON string or object.');
+			return undefined;
 		}
 	}
 	if (typeof input === 'object' && input !== null) {
 		return input as IDataObject;
 	}
-	throw new Error('SinergiaCRM: The "Data" field must be a valid JSON object or string.');
+	return undefined;
 }

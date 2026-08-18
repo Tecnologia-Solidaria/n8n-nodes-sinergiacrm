@@ -5,7 +5,8 @@
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionType } from 'n8n-workflow';
-import type { IDataObject, NodeApiError } from 'n8n-workflow';
+import type { IDataObject, JsonObject } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 import type { FilterOptions } from './helpers/filters';
 import { simplifyRecord } from './helpers/simplify';
 import type { SinergiaCRMListResponse, SinergiaCRMRecordResponse } from './helpers/types';
@@ -36,6 +37,7 @@ export class SinergiaCRM implements INodeType {
 		icon: 'file:sinergiacrm.svg',
 		group: ['transform'],
 		version: 1,
+		subtitle: 'SinergiaCRM',
 		description: 'Create, update, read, link or unlink records in SinergiaCRM.',
 		usableAsTool: true,
 		defaults: {
@@ -135,7 +137,7 @@ export class SinergiaCRM implements INodeType {
 							filters: options?.filters,
 						});
 
-						const data = (await this.helpers.requestWithAuthentication.call(
+						const data = (await this.helpers.httpRequestWithAuthentication.call(
 							this,
 							'SinergiaCRMCredentials',
 							{
@@ -165,61 +167,61 @@ export class SinergiaCRM implements INodeType {
 
 					const sliced = returnAll ? collected : collected.slice(0, limit);
 					for (const record of sliced) {
-						returnData.push({ json: simplify ? simplifyRecord(record) : record });
+						returnData.push({ json: simplify ? simplifyRecord(record) : record, pairedItem: { item: i } });
 					}
 
 				// GET ONE record by ID
 				} else if (operation === 'getOne') {
 					const id = this.getNodeParameter('id', i) as string;
-					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+					const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 						method: 'GET',
 						url: `${url}/${moduleName}/${id}`,
 						json: true,
 					})) as SinergiaCRMRecordResponse;
 					const data = response.data ?? {};
-					returnData.push({ json: simplify ? simplifyRecord(data) : data });
+					returnData.push({ json: simplify ? simplifyRecord(data) : data, pairedItem: { item: i } });
 
 				// CREATE record
 				} else if (operation === 'create') {
 					const responseData = await createRecord.call(this, moduleName, url, i);
-					returnData.push({ json: responseData });
+					returnData.push({ json: responseData, pairedItem: { item: i } });
 
 				// UPDATE record
 				} else if (operation === 'update') {
 					const responseData = await updateRecord.call(this, moduleName, url, i);
-					returnData.push({ json: responseData });
+					returnData.push({ json: responseData, pairedItem: { item: i } });
 
 				// LINK an existing record to another
 				} else if (operation === 'linkRecord') {
 					const responseData = await linkRecord.call(this, moduleName, url, i);
-					returnData.push({ json: responseData });
+					returnData.push({ json: responseData, pairedItem: { item: i } });
 
 				// UNLINK a record
 				} else if (operation === 'unlinkRecord') {
 					const responseData = await unlinkRecord.call(this, moduleName, url, i);
-					returnData.push({ json: responseData });
+					returnData.push({ json: responseData, pairedItem: { item: i } });
 
 				// DELETE record
 				} else if (operation === 'delete') {
 					const id = this.getNodeParameter('id', i) as string;
-					await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+					await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 						method: 'DELETE',
 						url: `${url}/${moduleName}/${id}`,
 						json: true,
 					});
-					returnData.push({ json: { deleted: true, id } });
+					returnData.push({ json: { deleted: true, id }, pairedItem: { item: i } });
 
 				// GET RELATIONSHIPS of a record
 				} else if (operation === 'getRelationships') {
 					const id = this.getNodeParameter('id', i) as string;
 					const relationship = this.getNodeParameter('relationship', i) as string;
-					const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+					const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 						method: 'GET',
 						url: `${url}/${moduleName}/${id}/relationships/${relationship}`,
 						json: true,
 					})) as SinergiaCRMRecordResponse;
 					const data = response.data ?? {};
-					returnData.push({ json: simplify ? simplifyRecord(data) : data });
+					returnData.push({ json: simplify ? simplifyRecord(data) : data, pairedItem: { item: i } });
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {
@@ -230,7 +232,7 @@ export class SinergiaCRM implements INodeType {
 					});
 					continue;
 				}
-				throw error;
+				throw new NodeApiError(this.getNode(), error as JsonObject);
 			}
 		}
 

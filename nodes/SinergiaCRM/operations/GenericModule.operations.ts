@@ -1,6 +1,6 @@
 ﻿// nodes/SinergiaCRM/operations/GenericModule.operations.ts
-import { NodeOperationError } from 'n8n-workflow';
-import type { IDataObject, IExecuteFunctions, INodeProperties } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, INodeProperties, JsonObject } from 'n8n-workflow';
 import {
 	buildAttributes,
 	isEmptyValue,
@@ -379,14 +379,11 @@ export function resolveRecordAttributes(this: IExecuteFunctions, itemIndex: numb
 	}
 
 	const rawData = this.getNodeParameter('data', itemIndex, '{}');
-	try {
-		return parseJsonInput(rawData);
-	} catch (error) {
-		throw new NodeOperationError(
-			this.getNode(),
-			error instanceof Error ? error.message : String(error),
-		);
+	const parsed = parseJsonInput(rawData);
+	if (!parsed) {
+		throw new NodeOperationError(this.getNode(), 'SinergiaCRM: The "Data" field must be a valid JSON object or string.');
 	}
+	return parsed;
 }
 
 /**
@@ -400,7 +397,7 @@ export async function createRecord(
 ): Promise<IDataObject> {
 	const attributes = resolveRecordAttributes.call(this, itemIndex);
 	const body = buildCreateBody(moduleName, attributes);
-	const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+	const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 		method: 'POST',
 		url: baseUrl,
 		body: body as unknown as IDataObject,
@@ -421,7 +418,7 @@ export async function updateRecord(
 	const id = this.getNodeParameter('id', itemIndex) as string;
 	const attributes = resolveRecordAttributes.call(this, itemIndex);
 	const body = buildUpdateBody(moduleName, id, attributes);
-	const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+	const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 		method: 'PATCH',
 		url: baseUrl,
 		body: body as unknown as IDataObject,
@@ -471,7 +468,7 @@ export async function linkRecord(
 	const relationshipsUrl = `${baseUrl}/${moduleName}/${recordId}/relationships/${relationship}`;
 
 	// Skip the link when it already exists (FR-006: idempotent behavior)
-	const existing = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+	const existing = (await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 		method: 'GET',
 		url: relationshipsUrl,
 		json: true,
@@ -482,7 +479,7 @@ export async function linkRecord(
 
 	try {
 		const body = buildLinkBody(relatedModule, relatedId);
-		const response = (await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+		const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 			method: 'POST',
 			url: relationshipsUrl,
 			body: body as unknown as IDataObject,
@@ -496,7 +493,7 @@ export async function linkRecord(
 				`The related record "${relatedId}" does not exist.`,
 			);
 		}
-		throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject);
 	}
 }
 
@@ -515,7 +512,7 @@ export async function unlinkRecord(
 	const relatedId = this.getNodeParameter('relatedId', itemIndex) as string;
 
 	try {
-		await this.helpers.requestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
+		await this.helpers.httpRequestWithAuthentication.call(this, 'SinergiaCRMCredentials', {
 			method: 'DELETE',
 			url: `${baseUrl}/${moduleName}/${recordId}/relationships/${relationship}/${relatedId}`,
 			json: true,
@@ -524,7 +521,7 @@ export async function unlinkRecord(
 		if (getErrorStatus(error) === 404) {
 			return { success: true, alreadyUnlinked: true, id: relatedId };
 		}
-		throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject);
 	}
 
 	return { success: true, id: relatedId };

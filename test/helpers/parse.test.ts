@@ -11,16 +11,14 @@ describe('parseJsonInput', () => {
 		expect(parseJsonInput('{"name":"Juan"}')).toEqual({ name: 'Juan' });
 	});
 
-	it('throws a descriptive error on an invalid JSON string', () => {
-		expect(() => parseJsonInput('{invalid')).toThrow(
-			'SinergiaCRM: The "Data" field must be a valid JSON string or object.',
-		);
+	it('returns undefined for an invalid JSON string', () => {
+		expect(parseJsonInput('{invalid')).toBeUndefined();
 	});
 
-	it('throws on non-object, non-string input', () => {
-		expect(() => parseJsonInput(42)).toThrow();
-		expect(() => parseJsonInput(null)).toThrow();
-		expect(() => parseJsonInput(undefined)).toThrow();
-		expect(() => parseJsonInput(true)).toThrow();
+	it('returns undefined on non-object, non-string input', () => {
+		expect(parseJsonInput(42)).toBeUndefined();
+		expect(parseJsonInput(null)).toBeUndefined();
+		expect(parseJsonInput(undefined)).toBeUndefined();
+		expect(parseJsonInput(true)).toBeUndefined();
 	});
 });

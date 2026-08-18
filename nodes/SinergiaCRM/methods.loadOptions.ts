@@ -22,7 +22,7 @@ export async function getModules(this: ILoadOptionsFunctions) {
 	const domainUrl = (credentials.domainUrl as string).replace(/\/$/, '');
 	const url = `${domainUrl}/Api/V8/meta/modules`;
 
-	const response = (await this.helpers.requestWithAuthentication.call(
+	const response = (await this.helpers.httpRequestWithAuthentication.call(
 		this,
 		'SinergiaCRMCredentials',
 		{
@@ -52,7 +52,7 @@ export async function getModuleFields(this: ILoadOptionsFunctions) {
 
 	const url = `${domainUrl}/Api/V8/meta/fields/${module}`;
 
-	const response = (await this.helpers.requestWithAuthentication.call(
+	const response = (await this.helpers.httpRequestWithAuthentication.call(
 		this,
 		'SinergiaCRMCredentials',
 		{
@@ -90,7 +90,7 @@ export async function getAvailableRelationships(this: ILoadOptionsFunctions) {
 
 	const url = `${domainUrl}/Api/V8/module/${module}/${recordId}`;
 
-	const response = (await this.helpers.requestWithAuthentication.call(
+	const response = (await this.helpers.httpRequestWithAuthentication.call(
 		this,
 		'SinergiaCRMCredentials',
 		{

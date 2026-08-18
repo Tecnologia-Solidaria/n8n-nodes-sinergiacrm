@@ -1,6 +1,6 @@
 ﻿// test/SinergiaCRMTrigger.node.test.ts
 import { describe, expect, it } from 'vitest';
-import { SinergiaCRMTrigger } from '../nodes/SinergiaCRM/SinergiaCRMTrigger.node';
+import { SinergiaCRMTrigger } from '../nodes/SinergiaCRM/SinergiacrmTrigger.node';
 
 describe('SinergiaCRMTrigger', () => {
 	it('expone un nodo de polling con la descripción correcta', () => {
