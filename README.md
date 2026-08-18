@@ -117,9 +117,12 @@ Because the node is `usableAsTool`, n8n's **MCP Server** trigger exposes it auto
 
 ## Troubleshooting
 
-- `access_token` missing → Check credentials or OAuth2 setup
-- `405 Method Not Allowed` → PATCH may not be enabled in your SinergiaCRM
-- API and validation errors are thrown as n8n node errors. To keep the workflow running after an error, enable **Continue On Fail** on the node.
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues including:
+
+- "The specified package could not be loaded" after upgrading (stale cache)
+- Node not appearing as an AI Agent tool
+- Authentication errors
+- n8n 2.x compatibility
 
 ---
 
